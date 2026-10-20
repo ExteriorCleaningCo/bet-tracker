@@ -258,7 +258,7 @@ async function init(){
 window.addEventListener('pagehide',()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}});
 
 /* ============ PERIODS & SUMMARY ============ */
-let period={type:'week',offset:0};
+let period={type:'all',offset:0};
 function periodRange(){
   const now=new Date();now.setHours(12,0,0,0);const o=period.offset;
   if(period.type==='day'){const d=new Date(now);d.setDate(d.getDate()+o);const s=iso(d);return{start:s,end:s,label:o===0?'Today':o===-1?'Yesterday':fmtDate(s)}}
