@@ -197,7 +197,11 @@ const legWin=l=>l.result==='won'?(l.dec||0):l.result==='void'?1:0;
 const legPlace=l=>(l.result==='won'||l.result==='placed')?1+((l.dec||1)-1)*frac(l.placeFrac):l.result==='void'?1:0;
 const betPending=b=>b.legs.some(l=>l.result==='pending');
 const settled=b=>!betPending(b);
-function betReturns(b){
+const hasOverride=b=>b.retOverride!=null&&b.retOverride!==''&&!isNaN(+b.retOverride);
+/* If the bookie paid a different amount (Rule 4, dead heat, bonus etc.)
+   the actual returns entered override the calculated figure. */
+function betReturns(b){if(betPending(b))return 0;return hasOverride(b)?r2(+b.retOverride):calcReturns(b)}
+function calcReturns(b){
   if(betPending(b))return 0;const u=unit(b);let r=0;
   for(const line of linesOf(b)){
     r+=u*line.reduce((a,i)=>a*legWin(b.legs[i]),1);
@@ -381,7 +385,7 @@ function betCard(b){
       <div class="meta">${esc(bookieName(b.bookieId))}<br>
       ${b.points}pt${n>1?(b.ptsMode==='total'?' total':' per line'):''} · ${stakeTxt}</div>
       ${b.notes?`<div class="meta">${esc(b.notes)}</div>`:''}
-      <span class="lock">🔒 1pt = ${money(b.ppv)}</span>
+      <span class="lock">🔒 1pt = ${money(b.ppv)}</span>${st!=='pending'&&hasOverride(b)?` <span class="lock">✎ Paid ${money(betReturns(b))} (calc ${money(calcReturns(b))})</span>`:''}
     </div>
     <div class="pl">${st==='pending'?`<span class="badge pending">Pending</span>${b.legs.length>1?`<div class="small" style="margin-top:4px">${done}/${b.legs.length} settled</div>`:''}`
       :`<div class="${cls(pl)}">${smoney(pl)}</div><div class="${cls(pl)}" style="font-size:13px;font-weight:400">(${pts(pl/b.ppv)})</div><span class="badge ${st}">${statusLabel(st,b)}</span>`}</div></div>
@@ -484,6 +488,11 @@ function viewAdd(){
     <div class="seg" id="quickpts" style="margin-top:8px">${[0.25,0.5,1,1.5,2].map(p=>`<button data-p="${p}">${p}pt</button>`).join('')}</div>
     ${n>1?`<label>The points are…</label><div class="seg" id="f-pm"><button data-v="line" class="${d.ptsMode!=='total'?'on':''}">Per line</button><button data-v="total" class="${d.ptsMode==='total'?'on':''}">Total stake</button></div>`:''}
     <div class="preview" id="preview"></div>
+    <div id="ovbox" class="hidden">
+      <label>Actual returns paid by bookie (optional)</label>
+      <div class="row" style="align-items:center"><input id="f-ret" inputmode="decimal" value="${hasOverride(d)?d.retOverride:''}"><button class="btn sec" id="f-retclear" style="margin-top:0;flex:0 0 auto;width:auto;padding:12px 14px">Clear</button></div>
+      <div class="hint">Only fill this in if the bookie paid a different amount to what's calculated, e.g. a Rule 4 deduction (10p in the £), dead heat or bonus. Leave blank to use the calculated returns.</div>
+    </div>
   </div>
   <div class="card"><label style="margin-top:0">Notes (optional)</label><textarea id="f-notes" placeholder="e.g. tipster NAP, BOG">${esc(d.notes)}</textarea></div>
   <button class="btn" id="f-save">${existing?'Save changes':'Add bet'}</button>
@@ -502,8 +511,12 @@ function updatePreview(){
     const w=sim('won');h+=`<br><strong>If ${d.legs.length>1?'all win':'it wins'}:</strong> returns ${money(w.ret)} <span class="pos">${plp(w.pl,w.pl/d.ppv)}</span>`;
     if(d.ew){const p=sim('placed');h+=`<br><strong>If ${d.legs.length>1?'all place':'it places'}:</strong> returns ${money(p.ret)} <span class="${cls(p.pl)}">${plp(p.pl,p.pl/d.ppv)}</span>`}
   }else if(d.legs.some(l=>l.odds&&!l.dec))h+=`<br><span class="neg">Couldn't read some odds — try 5/1, evs or 6.0</span>`;
-  if(!betPending(d)){const pl=betPL(d);h+=`<br><strong>Result:</strong> <span class="${cls(pl)}">${statusLabel(status(d),d)} ${plp(pl,pl/d.ppv)}</span>`}
+  if(!betPending(d)){const pl=betPL(d);
+    h+=`<br><strong>Result:</strong> <span class="${cls(pl)}">${statusLabel(status(d),d)} ${plp(pl,pl/d.ppv)}</span>`;
+    h+=hasOverride(d)?`<br><span class="small">Using actual returns ${money(betReturns(d))} (calculated ${money(calcReturns(d))}, difference ${smoney(r2(betReturns(d)-calcReturns(d)))})</span>`
+                     :`<br><span class="small">Calculated returns ${money(calcReturns(d))}</span>`}
   el.innerHTML=h;
+  const ob=document.getElementById('ovbox');if(ob){ob.classList.toggle('hidden',betPending(d));const fr=document.getElementById('f-ret');if(fr)fr.placeholder='Calculated: '+money(calcReturns(d))}
 }
 function bindAdd(){
   const d=draft,$=id=>document.getElementById(id);
@@ -525,6 +538,8 @@ function bindAdd(){
   document.querySelectorAll('.lpf').forEach(sel=>sel.onchange=()=>{d.legs[+sel.dataset.i].placeFrac=sel.value;updatePreview()});
   document.querySelectorAll('.lres').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
     d.legs[+seg.dataset.i].result=b.dataset.v;seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));updatePreview()}));
+  $('f-ret').oninput=e=>{const v=String(e.target.value).replace(/[£,\s]/g,'');d.retOverride=v===''?null:v;updatePreview()};
+  $('f-retclear').onclick=()=>{$('f-ret').value='';d.retOverride=null;updatePreview()};
   updatePreview();
   const doSave=again=>{
     if(!(d.points>0))return toast('Points must be more than 0');
@@ -532,6 +547,8 @@ function bindAdd(){
     if(bad>=0)return toast(`Enter odds for ${legName(d.legs[bad],bad,d.legs.length)} to settle it`);
     const odd=d.legs.findIndex(l=>l.odds&&!l.dec);
     if(odd>=0)return toast(`Couldn't read the odds for ${legName(d.legs[odd],odd,d.legs.length)}`);
+    if(d.retOverride!=null&&(isNaN(+d.retOverride)||+d.retOverride<0))return toast('Actual returns must be a number, e.g. 24.50');
+    if(hasOverride(d))d.retOverride=r2(+d.retOverride);else d.retOverride=null;
     d.result=status(d);d.locked=true;
     if(d.id){const i=S.bets.findIndex(b=>b.id===d.id),orig=S.bets[i];d.ppv=orig.ppv;d.ewMode=orig.ewMode;S.bets[i]=d;toast('Bet updated')}
     else{d.id=uid();d.created=Date.now();S.bets.push(d);toast(`${typeLabel(d)} added — ${money(betStake(d))}`)}
@@ -633,8 +650,8 @@ function bindSettings(){
   document.getElementById('exp').onclick=()=>{exportBackup();render()};
   document.getElementById('csv').onclick=()=>{
     const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-    const rows=[['Date','Bookie','Bet type','Horses','Races','Odds','Leg results','Each way','Place terms','Bets (lines)','Points','Points are','Point value','Stake','Result','Returns','P/L £','P/L pts','Notes']];
-    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{const st=status(b);rows.push([b.date,bookieName(b.bookieId),typeLabel(b),b.legs.map(l=>l.name).join(' / '),b.legs.map(legRace).join(' / '),b.legs.map(l=>l.odds).join(' / '),b.legs.map(l=>RES_SHORT[l.result]).join(' / '),b.ew?'Yes':'No',b.ew?b.legs.map(l=>l.placeFrac).join(' / '):'',lineCount(b),b.points,lineCount(b)>1?(b.ptsMode==='total'?'Total':'Per line'):'',b.ppv,betStake(b),statusLabel(st,b),betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes])});
+    const rows=[['Date','Bookie','Bet type','Horses','Races','Odds','Leg results','Each way','Place terms','Bets (lines)','Points','Points are','Point value','Stake','Result','Calculated returns','Returns','P/L £','P/L pts','Notes']];
+    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{const st=status(b);rows.push([b.date,bookieName(b.bookieId),typeLabel(b),b.legs.map(l=>l.name).join(' / '),b.legs.map(legRace).join(' / '),b.legs.map(l=>l.odds).join(' / '),b.legs.map(l=>RES_SHORT[l.result]).join(' / '),b.ew?'Yes':'No',b.ew?b.legs.map(l=>l.placeFrac).join(' / '):'',lineCount(b),b.points,lineCount(b)>1?(b.ptsMode==='total'?'Total':'Per line'):'',b.ppv,betStake(b),statusLabel(st,b),calcReturns(b),betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes])});
     dl(`bets-${today()}.csv`,rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')};
   const f=document.getElementById('impfile');
   document.getElementById('imp').onclick=()=>f.click();
