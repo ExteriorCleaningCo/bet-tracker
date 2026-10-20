@@ -308,7 +308,7 @@ function exportBackup(){S.lastBackup=Date.now();save();
 function viewDash(){
   const r=periodRange(),list=S.bets.filter(b=>inRange(b,r)),s=summarise(list);
   const bank=S.bookies.reduce((a,b)=>a+bookieBalance(b),0);
-  const types=[['day','Day'],['week','Week'],['month','Month'],['year','Year'],['all','All']];
+  const types=[['all','All'],['year','Year'],['month','Month'],['week','Week'],['day','Day']];
   const byBk={};list.filter(settled).forEach(b=>{const k=b.bookieId||'none';byBk[k]=byBk[k]||{st:0,pl:0,p:0,n:0};byBk[k].st+=betStake(b);byBk[k].pl+=betPL(b);byBk[k].p+=betPL(b)/b.ppv;byBk[k].n++});
   const bkRows=Object.entries(byBk).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<tr><td>${esc(k==='none'?'No bookie':bookieName(k))}</td><td>${v.n}</td><td>${money(v.st)}</td><td class="${cls(v.pl)}">${plp(v.pl,v.p)}</td></tr>`).join('');
   const byType={};list.filter(settled).forEach(b=>{const k=typeOf(b.type).name;byType[k]=byType[k]||{st:0,pl:0,p:0,n:0};byType[k].st+=betStake(b);byType[k].pl+=betPL(b);byType[k].p+=betPL(b)/b.ppv;byType[k].n++});
