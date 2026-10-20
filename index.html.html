@@ -25,14 +25,14 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Inter",-a
 /* No scroll bars anywhere */
 html,body,*{scrollbar-width:none;-ms-overflow-style:none}
 ::-webkit-scrollbar{display:none;width:0;height:0}
-body{padding:calc(env(safe-area-inset-top) + 8px) 14px calc(env(safe-area-inset-bottom) + 88px);overflow-x:hidden;word-wrap:break-word;overflow-wrap:anywhere}
+body{padding:calc(env(safe-area-inset-top) + 8px) 14px calc(env(safe-area-inset-bottom) + 88px);overflow-x:hidden;word-wrap:break-word;overflow-wrap:break-word}
 h1{font-weight:600;font-size:20px;margin:6px 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 h2{font-size:13px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
 .tag{font-size:12px;font-weight:500;background:var(--card2);color:var(--muted);padding:5px 10px;border-radius:20px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat .k{font-size:12px;color:var(--muted)}
-.stat .v{font-size:21px;font-weight:500;margin-top:2px}
+.stat .v{white-space:nowrap;font-size:21px;font-weight:500;margin-top:2px}
 .stat .s{font-size:12px;color:var(--muted);margin-top:2px}
 .big{font-size:34px;font-weight:600;letter-spacing:-.02em}
 .pos{color:var(--green)}.neg{color:var(--red)}
@@ -59,7 +59,7 @@ textarea{resize:none;min-height:60px}
 .bet .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .bet .sel{font-weight:600;font-size:16px}
 .bet .meta{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
-.bet .pl{font-weight:600;font-size:16px;white-space:nowrap;text-align:right}
+.bet .pl{flex-shrink:0;font-weight:600;font-size:16px;white-space:nowrap;text-align:right}
 .badge{display:inline-block;font-size:11px;font-weight:500;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--muted);text-transform:uppercase}
 .badge.won{color:var(--green)}.badge.placed{color:var(--blue)}.badge.lost{color:var(--red)}.badge.pending{color:var(--amber)}
 .settle{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -68,7 +68,7 @@ textarea{resize:none;min-height:60px}
 .day{font-size:13px;font-weight:500;color:var(--muted);margin:16px 0 6px;display:flex;justify-content:space-between}
 .bk{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .bk .name{font-weight:600;font-size:16px}
-.bk .bal{font-size:20px;font-weight:500;text-align:right}
+.bk .bal{white-space:nowrap;flex-shrink:0;font-size:20px;font-weight:500;text-align:right}
 .small{font-size:12px;color:var(--muted)}
 .tabbar{position:fixed;left:0;right:0;bottom:0;background:#ffffff;border-top:1px solid var(--line);display:flex;padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:10}
 .tabbar button{flex:1;background:none;border:0;color:var(--muted);font-size:11px;font-weight:400;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0}
@@ -102,6 +102,9 @@ input[type=date]{min-width:0;-webkit-appearance:none;appearance:none;min-height:
 .leg{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
 .leg:first-of-type{border-top:0;margin-top:0;padding-top:0}
 .legno{font-size:13px;font-weight:500}
+.legtxt{min-width:0;flex:1 1 150px;line-height:1.35}
+.hn{font-weight:500}
+input.lt{flex:0 0 40%;font-size:15px;padding:11px 8px;min-width:0;-webkit-appearance:none;appearance:none;min-height:46px}
 .lres{flex-wrap:nowrap;gap:4px}
 .lres button{min-width:0;padding:9px 2px;font-size:13px}
 select.lpf{flex:0 0 84px}
@@ -178,6 +181,8 @@ const typeOf=id=>BET_TYPES.find(t=>t.id===id)||BET_TYPES[0];
 function combos(n,k){const out=[];const rec=(s,c)=>{if(c.length===k){out.push(c.slice());return}for(let i=s;i<n;i++){c.push(i);rec(i+1,c);c.pop()}};rec(0,[]);return out}
 function linesOf(b){const t=typeOf(b.type),n=b.legs.length,min=t.min==='all'?n:t.min;let L=[];for(let k=min;k<=n;k++)L=L.concat(combos(n,k));return L}
 const lineCount=b=>linesOf(b).length;
+const legName=(l,i,n)=>l.name||(n>1?'Selection '+(i+1):'Selection');
+const legRace=l=>[l.time,l.course].filter(Boolean).join(' ');
 function typeLabel(b){const t=typeOf(b.type);return t.id==='acca'?`${b.legs.length}-fold Acca`:t.name}
 
 /* ============ BET MATHS ============
@@ -224,9 +229,11 @@ function normalise(d){
   s.bets.forEach(b=>{
     // upgrade bets logged in the earlier version (one selection) to the new format
     if(!Array.isArray(b.legs)||!b.legs.length){
-      b.legs=[{odds:b.odds||'',dec:b.dec||parseOdds(b.odds),placeFrac:b.placeFrac||s.settings.placeTerms,result:b.result||'pending'}];
+      b.legs=[{name:b.selection||'',course:b.event||'',time:'',odds:b.odds||'',dec:b.dec||parseOdds(b.odds),placeFrac:b.placeFrac||s.settings.placeTerms,result:b.result||'pending'}];
       b.type='single';
     }
+    b.legs.forEach(l=>{if(l.name==null)l.name='';if(l.course==null)l.course='';if(l.time==null)l.time=''});
+    if(b.selection&&!b.legs[0].name){b.legs[0].name=b.selection;if(b.event&&!b.legs[0].course)b.legs[0].course=b.event}
     if(!b.type)b.type='single';if(!b.ptsMode)b.ptsMode='line';
     // lock: bets never read the current point value
     if(!(b.ppv>0))b.ppv=s.settings.pointValue;if(!b.ewMode)b.ewMode=s.settings.ewMode;b.locked=true;
@@ -361,7 +368,7 @@ function betCard(b){
   const st=status(b),stake=betStake(b),pl=betPL(b),n=lineCount(b),u=unit(b);
   const done=b.legs.filter(l=>l.result!=='pending').length;
   const stakeTxt=(n>1||b.ew)?`${money(stake)} (${money(r2(u))}${b.ew?' e/w':''}${n>1?' × '+n+' lines':''})`:money(stake);
-  const legRows=b.legs.map((l,i)=>`<div class="legrow"><span>${b.legs.length>1?`<span class="small">#${i+1}</span> `:''}${l.odds?esc(l.odds):'<span class="small">no odds</span>'}${b.ew?` <span class="small">${esc(l.placeFrac)}</span>`:''}</span>
+  const legRows=b.legs.map((l,i)=>`<div class="legrow"><span class="legtxt"><span class="hn">${esc(legName(l,i,b.legs.length))}</span>${legRace(l)?`<span class="small"> · ${esc(legRace(l))}</span>`:''}<br><span class="small">${l.odds?esc(l.odds):'no odds'}${b.ew?' · '+esc(l.placeFrac)+' terms':''}</span></span>
     ${l.result==='pending'?`<span class="mini">
       <button class="w" data-leg="${b.id}:${i}" data-r="won">Won</button>
       ${b.ew?`<button class="p" data-leg="${b.id}:${i}" data-r="placed">Placed</button>`:''}
@@ -371,7 +378,7 @@ function betCard(b){
   return `<div class="bet ${st}" data-edit="${b.id}">
     <div class="top"><div style="min-width:0">
       <div class="sel">${esc(typeLabel(b))}${b.ew?' e/w':''}</div>
-      <div class="meta">${esc(bookieName(b.bookieId))}${b.selection?' · '+esc(b.selection):''}<br>
+      <div class="meta">${esc(bookieName(b.bookieId))}<br>
       ${b.points}pt${n>1?(b.ptsMode==='total'?' total':' per line'):''} · ${stakeTxt}</div>
       ${b.notes?`<div class="meta">${esc(b.notes)}</div>`:''}
       <span class="lock">🔒 1pt = ${money(b.ppv)}</span>
@@ -385,7 +392,7 @@ function viewBets(){
   let list=[...S.bets];
   if(betFilter==='pending')list=list.filter(betPending);
   if(betFilter==='settled')list=list.filter(settled);
-  if(betSearch){const q=betSearch.toLowerCase();list=list.filter(b=>(typeLabel(b)+' '+bookieName(b.bookieId)+' '+(b.notes||'')+' '+(b.selection||'')+' '+b.legs.map(l=>l.odds).join(' ')).toLowerCase().includes(q))}
+  if(betSearch){const q=betSearch.toLowerCase();list=list.filter(b=>(typeLabel(b)+' '+bookieName(b.bookieId)+' '+(b.notes||'')+' '+b.legs.map(l=>[l.name,l.course,l.time,l.odds].join(' ')).join(' ')).toLowerCase().includes(q))}
   list.sort((a,b)=>b.date.localeCompare(a.date)||(b.created||0)-(a.created||0));
   const shown=list.slice(0,betLimit);
   const dayPL={},dayP={};list.forEach(b=>{dayPL[b.date]=(dayPL[b.date]||0)+betPL(b);dayP[b.date]=(dayP[b.date]||0)+betPL(b)/b.ppv});
@@ -398,7 +405,7 @@ function viewBets(){
     <button class="chip ${betFilter==='pending'?'on':''}" data-f="pending">Pending (${pc})</button>
     <button class="chip ${betFilter==='settled'?'on':''}" data-f="settled">Settled</button>
   </div>
-  <input id="search" placeholder="Search bet type, bookie, notes…" value="${esc(betSearch)}">
+  <input id="search" placeholder="Search horse, course, bookie…" value="${esc(betSearch)}">
   ${html||`<div class="empty">No bets to show.</div>`}
   ${list.length>betLimit?`<button class="btn sec" id="more">Show more (${list.length-betLimit} older)</button>`:''}`;
 }
@@ -409,19 +416,19 @@ function bindBets(){
   document.querySelectorAll('[data-leg]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();
     const[id,i]=btn.dataset.leg.split(':'),b=S.bets.find(x=>x.id===id),l=b.legs[+i],r=btn.dataset.r;
     if((r==='won'||r==='placed')&&!l.dec){
-      const o=prompt(`Odds for ${b.legs.length>1?'selection '+(+i+1):'this bet'}? (e.g. 5/1, evs, 6.0)`,'');
+      const o=prompt(`Odds for ${legName(l,+i,b.legs.length)}? (e.g. 5/1, evs, 6.0)`,'');
       const d=parseOdds(o);if(!d){if(o!==null)toast("Couldn't read those odds");return}
       l.odds=o.trim();l.dec=d;
     }
     l.result=r;b.result=status(b);save();
-    if(!betPending(b)){const pl=betPL(b);toast(`${typeLabel(b)}: ${statusLabel(b.result,b).toUpperCase()} ${plp(pl,pl/b.ppv)}`)}
+    if(!betPending(b)){const pl=betPL(b);toast(`${b.legs.length===1&&b.legs[0].name?b.legs[0].name:typeLabel(b)}: ${statusLabel(b.result,b).toUpperCase()} ${plp(pl,pl/b.ppv)}`)}
     render()});
   document.querySelectorAll('[data-edit]').forEach(c=>c.onclick=()=>go('add',c.dataset.edit));
 }
 
 /* ============ ADD / EDIT BET ============ */
 let draft=null,draftKey;
-const newLeg=()=>({odds:'',dec:null,placeFrac:S.settings.placeTerms,result:'pending'});
+const newLeg=()=>({name:'',course:'',time:'',odds:'',dec:null,placeFrac:S.settings.placeTerms,result:'pending'});
 function newDraft(){
   const last=S.bets.slice().sort((a,b)=>(b.created||0)-(a.created||0))[0];
   return{id:null,date:today(),bookieId:last?last.bookieId:(S.bookies[0]||{}).id||'',type:'single',legs:[newLeg()],ew:false,
@@ -455,10 +462,15 @@ function viewAdd(){
     <div class="seg" id="f-ew"><button data-v="win" class="${!d.ew?'on':''}">Win</button><button data-v="ew" class="${d.ew?'on':''}">Each way</button></div>
   </div>
   <div class="card">
-    <label style="margin-top:0">${d.legs.length>1?'Odds & result for each selection':'Odds & result'}</label>
+    <label style="margin-top:0">${d.legs.length>1?'Your selections':'Your selection'}</label>
     ${d.legs.map((l,i)=>`<div class="leg">
       ${d.legs.length>1?`<div class="legno">Selection ${i+1}</div>`:''}
-      <div class="row" style="margin-top:6px">
+      <input class="ln" data-i="${i}" placeholder="Horse name" value="${esc(l.name)}" style="margin-top:6px" autocapitalize="words">
+      <div class="row" style="margin-top:8px">
+        <input class="lc" data-i="${i}" placeholder="Course e.g. Cheltenham" value="${esc(l.course)}" autocapitalize="words">
+        <input class="lt" data-i="${i}" type="time" value="${esc(l.time)}" aria-label="Race time">
+      </div>
+      <div class="row" style="margin-top:8px">
         <input class="lo" data-i="${i}" placeholder="Odds e.g. 5/1, evs, 6.0" value="${esc(l.odds)}">
         ${d.ew?`<select class="lpf" data-i="${i}" aria-label="Place terms">${terms.map(f=>`<option ${l.placeFrac===f?'selected':''}>${f}</option>`).join('')}</select>`:''}
       </div>
@@ -506,6 +518,9 @@ function bindAdd(){
   if(ap)ap.onclick=()=>{setType('acca',d.legs.length+1);render()};
   document.querySelectorAll('#f-ew button').forEach(b=>b.onclick=()=>{d.ew=b.dataset.v==='ew';if(!d.ew)d.legs.forEach(l=>{if(l.result==='placed')l.result='pending'});render()});
   document.querySelectorAll('#f-pm button').forEach(b=>b.onclick=()=>{d.ptsMode=b.dataset.v;document.querySelectorAll('#f-pm button').forEach(x=>x.classList.toggle('on',x===b));updatePreview()});
+  document.querySelectorAll('.ln').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].name=inp.value.trim()});
+  document.querySelectorAll('.lc').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].course=inp.value.trim()});
+  document.querySelectorAll('.lt').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].time=inp.value});
   document.querySelectorAll('.lo').forEach(inp=>inp.oninput=()=>{const l=d.legs[+inp.dataset.i];l.odds=inp.value.trim();l.dec=parseOdds(l.odds);updatePreview()});
   document.querySelectorAll('.lpf').forEach(sel=>sel.onchange=()=>{d.legs[+sel.dataset.i].placeFrac=sel.value;updatePreview()});
   document.querySelectorAll('.lres').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
@@ -514,9 +529,9 @@ function bindAdd(){
   const doSave=again=>{
     if(!(d.points>0))return toast('Points must be more than 0');
     const bad=d.legs.findIndex(l=>(l.result==='won'||l.result==='placed')&&!l.dec);
-    if(bad>=0)return toast(`Enter odds for ${d.legs.length>1?'selection '+(bad+1):'this bet'} to settle it`);
+    if(bad>=0)return toast(`Enter odds for ${legName(d.legs[bad],bad,d.legs.length)} to settle it`);
     const odd=d.legs.findIndex(l=>l.odds&&!l.dec);
-    if(odd>=0)return toast(`Couldn't read the odds for ${d.legs.length>1?'selection '+(odd+1):'this bet'}`);
+    if(odd>=0)return toast(`Couldn't read the odds for ${legName(d.legs[odd],odd,d.legs.length)}`);
     d.result=status(d);d.locked=true;
     if(d.id){const i=S.bets.findIndex(b=>b.id===d.id),orig=S.bets[i];d.ppv=orig.ppv;d.ewMode=orig.ewMode;S.bets[i]=d;toast('Bet updated')}
     else{d.id=uid();d.created=Date.now();S.bets.push(d);toast(`${typeLabel(d)} added — ${money(betStake(d))}`)}
@@ -537,7 +552,7 @@ function viewBookies(){
     const dep=(bk.txns||[]).reduce((a,t)=>a+Number(t.amount),0),open=openBookie===bk.id;
     return `<div class="card">
       <div class="bk" data-open="${bk.id}"><div style="min-width:0"><div class="name">${esc(bk.name)}</div>
-        <div class="small">Started ${money(Number(bk.start)||0)} · P/L <span class="${cls(pl)}">${plp(pl,plpts)}</span>${pend.length?` · <span style="color:var(--amber)">${pend.length} pending</span>`:''}</div></div>
+        <div class="small">Started ${money(Number(bk.start)||0)} · <span style="white-space:nowrap">P/L <span class="${cls(pl)}">${plp(pl,plpts)}</span></span>${pend.length?` · <span style="color:var(--amber)">${pend.length} pending</span>`:''}</div></div>
         <div class="bal">${money(bal)}</div></div>
       ${open?`
         <div class="small" style="margin-top:10px">Deposits/withdrawals: ${smoney(r2(dep))} · Bets: ${bets.length}</div>
@@ -618,8 +633,8 @@ function bindSettings(){
   document.getElementById('exp').onclick=()=>{exportBackup();render()};
   document.getElementById('csv').onclick=()=>{
     const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-    const rows=[['Date','Bookie','Bet type','Selections','Odds','Leg results','Each way','Place terms','Bets (lines)','Points','Points are','Point value','Stake','Result','Returns','P/L £','P/L pts','Notes']];
-    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{const st=status(b);rows.push([b.date,bookieName(b.bookieId),typeLabel(b),b.legs.length,b.legs.map(l=>l.odds).join(' / '),b.legs.map(l=>RES_SHORT[l.result]).join(' / '),b.ew?'Yes':'No',b.ew?b.legs.map(l=>l.placeFrac).join(' / '):'',lineCount(b),b.points,lineCount(b)>1?(b.ptsMode==='total'?'Total':'Per line'):'',b.ppv,betStake(b),statusLabel(st,b),betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes])});
+    const rows=[['Date','Bookie','Bet type','Horses','Races','Odds','Leg results','Each way','Place terms','Bets (lines)','Points','Points are','Point value','Stake','Result','Returns','P/L £','P/L pts','Notes']];
+    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{const st=status(b);rows.push([b.date,bookieName(b.bookieId),typeLabel(b),b.legs.map(l=>l.name).join(' / '),b.legs.map(legRace).join(' / '),b.legs.map(l=>l.odds).join(' / '),b.legs.map(l=>RES_SHORT[l.result]).join(' / '),b.ew?'Yes':'No',b.ew?b.legs.map(l=>l.placeFrac).join(' / '):'',lineCount(b),b.points,lineCount(b)>1?(b.ptsMode==='total'?'Total':'Per line'):'',b.ppv,betStake(b),statusLabel(st,b),betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes])});
     dl(`bets-${today()}.csv`,rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')};
   const f=document.getElementById('impfile');
   document.getElementById('imp').onclick=()=>f.click();
