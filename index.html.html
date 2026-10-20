@@ -74,6 +74,7 @@ textarea{resize:none;min-height:60px}
 .tabbar button{flex:1;background:none;border:0;color:var(--muted);font-size:11px;font-weight:400;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0}
 .tabbar button svg{width:22px;height:22px}
 .tabbar button.on{color:var(--accent)}
+.tabbar .add.on{color:var(--onaccent)}
 .tabbar .add{color:var(--onaccent)}
 .tabbar .add span.c{background:var(--accent);width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:-20px;box-shadow:0 4px 12px rgba(0,0,0,.18)}
 .tabbar .add span.c svg{width:26px;height:26px}
@@ -89,6 +90,29 @@ textarea{resize:none;min-height:60px}
 .txn{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-top:1px solid var(--line);gap:8px}
 details summary{cursor:pointer;color:var(--accent);font-weight:500;text-decoration:underline;font-size:13px;margin-top:8px;list-style:none}
 details summary::-webkit-details-marker{display:none}
+
+button{font-family:inherit}
+strong{font-weight:600}
+input[type=date]{min-width:0;-webkit-appearance:none;appearance:none;min-height:46px;display:block;text-align:left}
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.types button{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 4px;font-size:13px;color:var(--text);line-height:1.25}
+.types button span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.types button.on{background:var(--accent);color:var(--onaccent);border-color:var(--accent)}
+.types button.on span{color:#cfcfcf}
+.leg{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.leg:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.legno{font-size:13px;font-weight:500}
+.lres{flex-wrap:nowrap;gap:4px}
+.lres button{min-width:0;padding:9px 2px;font-size:13px}
+select.lpf{flex:0 0 84px}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;background:var(--card2);border-radius:10px;padding:6px}
+.stepper button{width:44px;height:38px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:20px;color:var(--text)}
+.legs{margin-top:8px}
+.legrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;padding:7px 0;border-top:1px dashed var(--line);flex-wrap:wrap}
+.legrow .mini{display:flex;gap:4px;flex-wrap:wrap}
+.legrow .mini button{padding:6px 9px;font-size:12px;border-radius:7px;border:1px solid var(--line);background:var(--card2);color:var(--text)}
+.legrow .w{color:var(--green)}.legrow .p{color:var(--blue)}.legrow .l{color:var(--red)}
+.badge.void{color:var(--muted)}
 .hidden{display:none!important}
 .logo{width:34px;height:34px;border-radius:9px;vertical-align:middle;margin-right:10px}
 .title{display:flex;align-items:center}
@@ -110,22 +134,108 @@ details summary::-webkit-details-marker{display:none}
 </nav>
 
 <script>
-/* ============ DATA ============ */
+const LOGO="<svg class=\"logo\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"> <rect width=\"512\" height=\"512\" fill=\"#111111\"/> <g fill=\"#ffffff\" stroke=\"#ffffff\" stroke-linejoin=\"round\" stroke-linecap=\"round\"> <path d=\"M168 250 C138 236 104 240 70 270 C98 262 120 266 150 276 Z\" stroke-width=\"6\"/> <path d=\"M160 262 C170 226 230 214 290 222 C320 226 338 236 350 252 C352 282 336 300 300 304 C262 308 236 300 214 304 C186 306 160 296 160 262 Z\" stroke=\"none\"/> <path d=\"M296 230 C318 208 344 186 374 168 C388 160 400 164 404 176 C392 196 378 220 352 262 Z\" stroke=\"none\"/> <path d=\"M370 166 C384 152 404 150 418 160 C430 170 440 186 444 198 C446 206 438 210 430 206 C418 200 404 192 392 186 Z\" stroke=\"none\"/> <path d=\"M378 162 L382 140 L392 158 Z\" stroke-width=\"4\"/> <path d=\"M330 286 L364 316 L400 306 L410 314 L368 334 L318 302 Z\" stroke-width=\"6\"/> <path d=\"M306 296 L322 342 L300 372 L292 366 L306 340 L290 300 Z\" stroke-width=\"6\"/> <path d=\"M176 280 L140 318 L100 336 L94 326 L130 304 L162 266 Z\" stroke-width=\"6\"/> <path d=\"M206 294 L224 344 L252 368 L246 376 L212 352 L192 300 Z\" stroke-width=\"6\"/> </g> <g fill=\"#ffffff\" stroke=\"#111111\" stroke-width=\"7\" stroke-linejoin=\"round\" stroke-linecap=\"round\"> <path d=\"M242 232 C238 214 256 198 284 192 C300 189 314 192 320 200 C322 210 314 214 304 214 L336 226 C342 229 340 238 332 236 L296 226 C286 232 276 236 268 236 L282 254 C286 262 278 266 272 260 L252 240 C248 238 244 236 242 232 Z\"/> <circle cx=\"326\" cy=\"184\" r=\"17\"/> </g> <path d=\"M310 180 C314 166 336 164 342 178 Z\" fill=\"#111111\"/> <path d=\"M70 420 H442\" stroke=\"#ffffff\" stroke-width=\"6\" stroke-linecap=\"round\" opacity=\".3\"/> </svg>";
+/* ============ HELPERS ============ */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r2=n=>Math.round(n*100)/100;
+const money=n=>(n<0?'-':'')+'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+const smoney=n=>(n>0?'+':'')+money(n);
+const pts=n=>{const v=Math.round(n*100)/100;return (v>0?'+':'')+v.toLocaleString('en-GB',{maximumFractionDigits:2})+(Math.abs(v)===1?'pt':'pts')};
+const plp=(pl,p)=>`${smoney(r2(pl))} (${pts(p)})`;
+const cls=n=>n>0.004?'pos':n<-0.004?'neg':'';
+const iso=d=>{const z=new Date(d);z.setMinutes(z.getMinutes()-z.getTimezoneOffset());return z.toISOString().slice(0,10)};
+const today=()=>iso(new Date());
+const fmtDate=s=>{const d=new Date(s+'T12:00');return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2000)}
+function frac(str){if(!str)return 0;const s=String(str).trim();if(s.includes('/')){const[a,b]=s.split('/').map(Number);return b?a/b:0}return Number(s)||0}
+/* Odds: accepts 5/1, 11/4, evs/evens, or decimal like 6.0 */
+function parseOdds(str){
+  if(str==null)return null;const s=String(str).trim().toLowerCase();
+  if(!s)return null;
+  if(s==='evs'||s==='evens'||s==='ev'||s==='e')return 2;
+  if(s.includes('/')){const[a,b]=s.split('/').map(Number);if(a>0&&b>0)return 1+a/b;return null}
+  const n=Number(s);return n>1?n:null;
+}
+
+/* ============ BET TYPES ============
+   n = number of selections. min = smallest combination included
+   ('all' = one line using every selection). */
+const BET_TYPES=[
+  {id:'single',  name:'Single',     n:1,min:'all'},
+  {id:'double',  name:'Double',     n:2,min:'all'},
+  {id:'treble',  name:'Treble',     n:3,min:'all'},
+  {id:'acca',    name:'Accumulator',n:4,min:'all',variable:true},
+  {id:'trixie',  name:'Trixie',     n:3,min:2},
+  {id:'patent',  name:'Patent',     n:3,min:1},
+  {id:'yankee',  name:'Yankee',     n:4,min:2},
+  {id:'lucky15', name:'Lucky 15',   n:4,min:1},
+  {id:'canadian',name:'Canadian',   n:5,min:2},
+  {id:'lucky31', name:'Lucky 31',   n:5,min:1},
+  {id:'heinz',   name:'Heinz',      n:6,min:2},
+  {id:'lucky63', name:'Lucky 63',   n:6,min:1},
+];
+const typeOf=id=>BET_TYPES.find(t=>t.id===id)||BET_TYPES[0];
+function combos(n,k){const out=[];const rec=(s,c)=>{if(c.length===k){out.push(c.slice());return}for(let i=s;i<n;i++){c.push(i);rec(i+1,c);c.pop()}};rec(0,[]);return out}
+function linesOf(b){const t=typeOf(b.type),n=b.legs.length,min=t.min==='all'?n:t.min;let L=[];for(let k=min;k<=n;k++)L=L.concat(combos(n,k));return L}
+const lineCount=b=>linesOf(b).length;
+function typeLabel(b){const t=typeOf(b.type);return t.id==='acca'?`${b.legs.length}-fold Acca`:t.name}
+
+/* ============ BET MATHS ============
+   unit = stake per line, per way. Each bet keeps its own point value (ppv),
+   e/w rule and points mode forever — settings only affect new bets. */
+function unit(b){
+  const base=b.points*b.ppv,perLine=b.ptsMode==='total'?base/lineCount(b):base;
+  return b.ew?(b.ewMode==='perway'?perLine:perLine/2):perLine;
+}
+function betStake(b){return r2(unit(b)*lineCount(b)*(b.ew?2:1))}
+const legWin=l=>l.result==='won'?(l.dec||0):l.result==='void'?1:0;
+const legPlace=l=>(l.result==='won'||l.result==='placed')?1+((l.dec||1)-1)*frac(l.placeFrac):l.result==='void'?1:0;
+const betPending=b=>b.legs.some(l=>l.result==='pending');
+const settled=b=>!betPending(b);
+function betReturns(b){
+  if(betPending(b))return 0;const u=unit(b);let r=0;
+  for(const line of linesOf(b)){
+    r+=u*line.reduce((a,i)=>a*legWin(b.legs[i]),1);
+    if(b.ew)r+=u*line.reduce((a,i)=>a*legPlace(b.legs[i]),1);
+  }
+  return r2(r);
+}
+function betPL(b){return betPending(b)?0:r2(betReturns(b)-betStake(b))}
+function status(b){
+  if(betPending(b))return 'pending';
+  if(b.legs.every(l=>l.result==='void'))return 'void';
+  const r=betReturns(b),s=betStake(b);
+  if(r<=0.004)return 'lost';
+  if(b.legs.length===1)return b.legs[0].result==='placed'?'placed':'won';
+  return r>=s?'won':'placed';
+}
+const statusLabel=(st,b)=>st==='placed'&&b.legs.length>1?'Part return':st==='void'?'Void':st;
+
+/* ============ DATA ============
+   Data is kept in TWO places on the phone (localStorage + IndexedDB) and the
+   browser is asked to mark storage as persistent. Every change saves instantly. */
 const KEY='betTracker.v1';
-const defaultState={settings:{pointValue:5,placeTerms:'1/5',ewMode:'split'},bookies:[],bets:[]};
-/* Data is kept in TWO places on the phone (localStorage + IndexedDB) and the
-   browser is asked to mark storage as persistent, so it isn't cleared to free space.
-   Every change is saved instantly. The newest copy always wins on start-up. */
-let S=load();
+const defaultState={settings:{pointValue:5,placeTerms:'1/5',ewMode:'split',ptsMode:'line'},bookies:[],bets:[]};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function normalise(d){
   const s=Object.assign(structuredClone(defaultState),d||{});
   s.settings=Object.assign(structuredClone(defaultState.settings),s.settings||{});
   s.bookies=Array.isArray(s.bookies)?s.bookies:[];s.bets=Array.isArray(s.bets)?s.bets:[];
-  // Lock every bet to its own point value / e-w rule. Bets never read the current setting.
-  s.bets.forEach(b=>{if(!(b.ppv>0))b.ppv=s.settings.pointValue;if(!b.ewMode)b.ewMode=s.settings.ewMode;b.locked=true});
+  s.bets.forEach(b=>{
+    // upgrade bets logged in the earlier version (one selection) to the new format
+    if(!Array.isArray(b.legs)||!b.legs.length){
+      b.legs=[{odds:b.odds||'',dec:b.dec||parseOdds(b.odds),placeFrac:b.placeFrac||s.settings.placeTerms,result:b.result||'pending'}];
+      b.type='single';
+    }
+    if(!b.type)b.type='single';if(!b.ptsMode)b.ptsMode='line';
+    // lock: bets never read the current point value
+    if(!(b.ppv>0))b.ppv=s.settings.pointValue;if(!b.ewMode)b.ewMode=s.settings.ewMode;b.locked=true;
+    b.result=status(b);
+  });
   return s;
 }
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.settings)return normalise(d)}catch(e){}return normalise(null)}
+let S=load();
 const IDB={db:null,
   open(){return new Promise(res=>{try{const r=indexedDB.open('betTracker',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onerror=()=>res(null)}catch(e){res(null)}})},
   async get(){const db=this.db||await this.open();if(!db)return null;return new Promise(res=>{try{const q=db.transaction('kv').objectStore('kv').get('state');q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)}catch(e){res(null)}})},
@@ -146,47 +256,8 @@ async function init(){
   render();
 }
 window.addEventListener('pagehide',()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}});
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
-/* ============ HELPERS ============ */
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const r2=n=>Math.round(n*100)/100;
-const money=n=>(n<0?'-':'')+'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
-const smoney=n=>(n>0?'+':'')+money(n);
-const pts=n=>{const v=Math.round(n*100)/100;return (v>0?'+':'')+v.toLocaleString('en-GB',{maximumFractionDigits:2})+(Math.abs(v)===1?'pt':'pts')};
-const plp=(pl,p)=>`${smoney(r2(pl))} (${pts(p)})`;
-const cls=n=>n>0.004?'pos':n<-0.004?'neg':'';
-const iso=d=>{const z=new Date(d);z.setMinutes(z.getMinutes()-z.getTimezoneOffset());return z.toISOString().slice(0,10)};
-const today=()=>iso(new Date());
-const fmtDate=s=>{const d=new Date(s+'T12:00');return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})};
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
-function frac(str){if(!str)return 0;const s=String(str).trim();if(s.includes('/')){const[a,b]=s.split('/').map(Number);return b?a/b:0}return Number(s)||0}
-
-/* Odds: accepts 5/1, 11/4, evs/evens, or decimal like 6.0 */
-function parseOdds(str){
-  if(str==null)return null;let s=String(str).trim().toLowerCase();
-  if(!s)return null;
-  if(s==='evs'||s==='evens'||s==='ev'||s==='e')return 2;
-  if(s.includes('/')){const[a,b]=s.split('/').map(Number);if(a>0&&b>0)return 1+a/b;return null}
-  const n=Number(s);if(n>1)return n;return null;
-}
-
-/* Bet maths */
-function betStake(b){return r2(b.points*b.ppv*(b.ew&&b.ewMode==='perway'?2:1))}
-function betReturns(b){
-  const st=betStake(b),d=b.dec||0;
-  if(b.result==='void')return st;
-  if(b.result==='lost'||b.result==='pending')return 0;
-  if(!b.ew){return b.result==='won'?r2(st*d):0}
-  const half=st/2,pd=1+(d-1)*frac(b.placeFrac);
-  if(b.result==='won')return r2(half*d+half*pd);
-  if(b.result==='placed')return r2(half*pd);
-  return 0;
-}
-function betPL(b){if(b.result==='pending')return 0;return r2(betReturns(b)-betStake(b))}
-const settled=b=>b.result!=='pending';
-
-/* Periods */
+/* ============ PERIODS & SUMMARY ============ */
 let period={type:'week',offset:0};
 function periodRange(){
   const now=new Date();now.setHours(12,0,0,0);const o=period.offset;
@@ -199,28 +270,26 @@ function periodRange(){
   if(period.type==='year'){const y=now.getFullYear()+o;return{start:y+'-01-01',end:y+'-12-31',label:String(y)}}
   return{start:'0000-01-01',end:'9999-12-31',label:'All time'};
 }
-function inRange(b,r){return b.date>=r.start&&b.date<=r.end}
-
+const inRange=(b,r)=>b.date>=r.start&&b.date<=r.end;
 function summarise(list){
   const s={staked:0,returns:0,pl:0,ptsPL:0,ptsStaked:0,n:0,won:0,placed:0,lost:0,void:0,pending:0,pendingStake:0};
   list.forEach(b=>{
-    if(b.result==='pending'){s.pending++;s.pendingStake+=betStake(b);return}
-    const st=betStake(b),pl=betPL(b);
-    if(b.result==='void'){s.void++;return}
-    s.n++;s.staked+=st;s.returns+=betReturns(b);s.pl+=pl;s.ptsPL+=pl/b.ppv;s.ptsStaked+=st/b.ppv;s[b.result]++;
+    const st=status(b),stake=betStake(b);
+    if(st==='pending'){s.pending++;s.pendingStake+=stake;return}
+    if(st==='void'){s.void++;return}
+    const pl=betPL(b);
+    s.n++;s.staked+=stake;s.returns+=betReturns(b);s.pl+=pl;s.ptsPL+=pl/b.ppv;s.ptsStaked+=stake/b.ppv;s[st]++;
   });
   s.roi=s.staked?s.pl/s.staked*100:0;s.strike=s.n?(s.won/s.n*100):0;
   return s;
 }
-
-/* Bookie balance */
 function bookieBalance(bk){
   let bal=Number(bk.start)||0;
   (bk.txns||[]).forEach(t=>bal+=Number(t.amount)||0);
-  S.bets.filter(b=>b.bookieId===bk.id).forEach(b=>{bal+= b.result==='pending'?-betStake(b):betPL(b)});
+  S.bets.filter(b=>b.bookieId===bk.id).forEach(b=>{bal+=betPending(b)?-betStake(b):betPL(b)});
   return r2(bal);
 }
-const bookieName=id=>(S.bookies.find(b=>b.id===id)||{}).name||'—';
+const bookieName=id=>(S.bookies.find(b=>b.id===id)||{}).name||'No bookie';
 
 /* ============ ROUTER ============ */
 let tab='dash',editId=null,betFilter='all',betSearch='',betLimit=40,openBookie=null;
@@ -228,22 +297,25 @@ function go(t,id){tab=t;editId=id||null;render();window.scrollTo(0,0)}
 document.querySelectorAll('#tabbar button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 function render(){
   document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  const app=document.getElementById('app');
-  app.innerHTML=({dash:viewDash,bets:viewBets,add:viewAdd,bookies:viewBookies,settings:viewSettings})[tab]();
+  document.getElementById('app').innerHTML=({dash:viewDash,bets:viewBets,add:viewAdd,bookies:viewBookies,settings:viewSettings})[tab]();
   ({dash:bindDash,bets:bindBets,add:bindAdd,bookies:bindBookies,settings:bindSettings})[tab]();
 }
 
 /* ============ DASHBOARD ============ */
+function backupDue(){return S.bets.length>0&&(!S.lastBackup||Date.now()-S.lastBackup>14*864e5)}
+function exportBackup(){S.lastBackup=Date.now();save();
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download=`bet-tracker-backup-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Backup exported')}
 function viewDash(){
   const r=periodRange(),list=S.bets.filter(b=>inRange(b,r)),s=summarise(list);
   const bank=S.bookies.reduce((a,b)=>a+bookieBalance(b),0);
   const types=[['day','Day'],['week','Week'],['month','Month'],['year','Year'],['all','All']];
-  // per-bookie breakdown
-  const byBk={};list.filter(settled).forEach(b=>{const k=b.bookieId||'none';byBk[k]=byBk[k]||{st:0,pl:0,n:0,p:0};byBk[k].st+=betStake(b);byBk[k].pl+=betPL(b);byBk[k].p+=betPL(b)/b.ppv;byBk[k].n++});
+  const byBk={};list.filter(settled).forEach(b=>{const k=b.bookieId||'none';byBk[k]=byBk[k]||{st:0,pl:0,p:0,n:0};byBk[k].st+=betStake(b);byBk[k].pl+=betPL(b);byBk[k].p+=betPL(b)/b.ppv;byBk[k].n++});
   const bkRows=Object.entries(byBk).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<tr><td>${esc(k==='none'?'No bookie':bookieName(k))}</td><td>${v.n}</td><td>${money(v.st)}</td><td class="${cls(v.pl)}">${plp(v.pl,v.p)}</td></tr>`).join('');
+  const byType={};list.filter(settled).forEach(b=>{const k=typeOf(b.type).name;byType[k]=byType[k]||{st:0,pl:0,p:0,n:0};byType[k].st+=betStake(b);byType[k].pl+=betPL(b);byType[k].p+=betPL(b)/b.ppv;byType[k].n++});
+  const tyRows=Object.entries(byType).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${money(v.st)}</td><td class="${cls(v.pl)}">${plp(v.pl,v.p)}</td></tr>`).join('');
   return `
-  <h1><span class="title"><svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"> <rect width="512" height="512" fill="#111111"/> <g fill="#ffffff" stroke="#ffffff" stroke-linejoin="round" stroke-linecap="round"> <path d="M168 250 C138 236 104 240 70 270 C98 262 120 266 150 276 Z" stroke-width="6"/> <path d="M160 262 C170 226 230 214 290 222 C320 226 338 236 350 252 C352 282 336 300 300 304 C262 308 236 300 214 304 C186 306 160 296 160 262 Z" stroke="none"/> <path d="M296 230 C318 208 344 186 374 168 C388 160 400 164 404 176 C392 196 378 220 352 262 Z" stroke="none"/> <path d="M370 166 C384 152 404 150 418 160 C430 170 440 186 444 198 C446 206 438 210 430 206 C418 200 404 192 392 186 Z" stroke="none"/> <path d="M378 162 L382 140 L392 158 Z" stroke-width="4"/> <path d="M330 286 L364 316 L400 306 L410 314 L368 334 L318 302 Z" stroke-width="6"/> <path d="M306 296 L322 342 L300 372 L292 366 L306 340 L290 300 Z" stroke-width="6"/> <path d="M176 280 L140 318 L100 336 L94 326 L130 304 L162 266 Z" stroke-width="6"/> <path d="M206 294 L224 344 L252 368 L246 376 L212 352 L192 300 Z" stroke-width="6"/> </g> <g fill="#ffffff" stroke="#111111" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"> <path d="M242 232 C238 214 256 198 284 192 C300 189 314 192 320 200 C322 210 314 214 304 214 L336 226 C342 229 340 238 332 236 L296 226 C286 232 276 236 268 236 L282 254 C286 262 278 266 272 260 L252 240 C248 238 244 236 242 232 Z"/> <circle cx="326" cy="184" r="17"/> </g> <path d="M310 180 C314 166 336 164 342 178 Z" fill="#111111"/> <path d="M70 420 H442" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity=".3"/> </svg>Bet Tracker</span> <span class="tag">1pt = ${money(S.settings.pointValue)}</span></h1>
-  ${backupDue()?`<div class="banner"><strong style="font-weight:600">Back up your bets</strong><br>Everything saves automatically on this phone, but a backup file protects you if the phone is lost or replaced.<button class="btn" id="quickbackup">Export backup now</button></div>`:''}
+  <h1><span class="title">${LOGO}Bet Tracker</span> <span class="tag">1pt = ${money(S.settings.pointValue)}</span></h1>
+  ${backupDue()?`<div class="banner"><strong>Back up your bets</strong><br>Everything saves automatically on this phone, but a backup file protects you if the phone is lost or replaced.<button class="btn" id="quickbackup">Export backup now</button></div>`:''}
   <div class="chips">${types.map(([k,l])=>`<button class="chip ${period.type===k?'on':''}" data-ptype="${k}">${l}</button>`).join('')}</div>
   ${period.type!=='all'?`<div class="nav"><button id="prev">‹</button><div class="lbl">${esc(r.label)}</div><button id="next" ${period.offset>=0?'disabled style="opacity:.3"':''}>›</button></div>`:''}
   <div class="card">
@@ -252,33 +324,29 @@ function viewDash(){
     ${chartSVG(list)}
   </div>
   <div class="grid">
-    <div class="card stat"><div class="k">Staked</div><div class="v">${money(s.staked)}</div><div class="s">${(Math.round(s.ptsStaked*100)/100)} pts</div></div>
+    <div class="card stat"><div class="k">Staked</div><div class="v">${money(s.staked)}</div><div class="s">${r2(s.ptsStaked)} pts</div></div>
     <div class="card stat"><div class="k">Returns</div><div class="v">${money(s.returns)}</div><div class="s">ROI <span class="${cls(s.roi)}">${s.roi.toFixed(1)}%</span></div></div>
     <div class="card stat"><div class="k">Bets settled</div><div class="v">${s.n}</div><div class="s"><span class="pos">${s.won}W</span> · <span style="color:var(--blue)">${s.placed}P</span> · <span class="neg">${s.lost}L</span>${s.void?` · ${s.void}V`:''}</div></div>
-    <div class="card stat"><div class="k">Strike rate</div><div class="v">${s.strike.toFixed(0)}%</div><div class="s">winners only</div></div>
+    <div class="card stat"><div class="k">Strike rate</div><div class="v">${s.strike.toFixed(0)}%</div><div class="s">bets in profit</div></div>
     <div class="card stat"><div class="k">Pending</div><div class="v" style="color:var(--amber)">${s.pending}</div><div class="s">${money(s.pendingStake)} at stake</div></div>
     <div class="card stat"><div class="k">Total bank</div><div class="v">${money(bank)}</div><div class="s">${S.bookies.length} bookie${S.bookies.length===1?'':'s'}</div></div>
   </div>
+  ${tyRows?`<h2>By bet type</h2><div class="card"><table class="tbl"><tr><th>Type</th><th>Bets</th><th>Staked</th><th>P/L</th></tr>${tyRows}</table></div>`:''}
   ${bkRows?`<h2>By bookie</h2><div class="card"><table class="tbl"><tr><th>Bookie</th><th>Bets</th><th>Staked</th><th>P/L</th></tr>${bkRows}</table></div>`:''}
-  ${!S.bets.length?`<div class="empty">No bets yet.<br>Add your bookies first, then tap <strong style="font-weight:600">+</strong> to log a bet.</div>`:''}
-  `;
+  ${!S.bets.length?`<div class="empty">No bets yet.<br>Add your bookies first, then tap <strong>+</strong> to log a bet.</div>`:''}`;
 }
 function chartSVG(list){
   const days={};list.filter(settled).forEach(b=>{days[b.date]=(days[b.date]||0)+betPL(b)});
   const keys=Object.keys(days).sort();if(keys.length<2)return '';
-  let c=0;const pts=[0,...keys.map(k=>c+=days[k])];
-  const W=320,H=90,mn=Math.min(...pts),mx=Math.max(...pts),rg=(mx-mn)||1;
-  const x=i=>i/(pts.length-1)*W,y=v=>H-6-((v-mn)/rg)*(H-12);
-  const line=pts.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const col=c>=0?'var(--green)':'var(--red)';
+  let c=0;const p=[0,...keys.map(k=>c+=days[k])];
+  const W=320,H=90,mn=Math.min(...p),mx=Math.max(...p),rg=(mx-mn)||1;
+  const x=i=>i/(p.length-1)*W,y=v=>H-6-((v-mn)/rg)*(H-12);
+  const line=p.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="margin-top:10px">
     <line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)" stroke-dasharray="4 4"/>
-    <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/></svg>
+    <polyline points="${line}" fill="none" stroke="${c>=0?'var(--green)':'var(--red)'}" stroke-width="2" stroke-linejoin="round"/></svg>
     <div class="small">Running P/L by day</div>`;
 }
-function backupDue(){return S.bets.length>0&&(!S.lastBackup||Date.now()-S.lastBackup>14*864e5)}
-function exportBackup(){S.lastBackup=Date.now();save();
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download=`bet-tracker-backup-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Backup exported')}
 function bindDash(){
   const qb=document.getElementById('quickbackup');if(qb)qb.onclick=()=>{exportBackup();render()};
   document.querySelectorAll('[data-ptype]').forEach(b=>b.onclick=()=>{period={type:b.dataset.ptype,offset:0};render()});
@@ -288,43 +356,49 @@ function bindDash(){
 }
 
 /* ============ BETS LIST ============ */
+const RES_SHORT={pending:'Pending',won:'Won',placed:'Placed',lost:'Lost',void:'NR'};
 function betCard(b){
-  const st=betStake(b),pl=betPL(b);
-  const stakeTxt=b.ew?`${money(r2(st/2))} e/w (${money(st)})`:money(st);
-  return `<div class="bet ${b.result}" data-edit="${b.id}">
+  const st=status(b),stake=betStake(b),pl=betPL(b),n=lineCount(b),u=unit(b);
+  const done=b.legs.filter(l=>l.result!=='pending').length;
+  const stakeTxt=(n>1||b.ew)?`${money(stake)} (${money(r2(u))}${b.ew?' e/w':''}${n>1?' × '+n+' lines':''})`:money(stake);
+  const legRows=b.legs.map((l,i)=>`<div class="legrow"><span>${b.legs.length>1?`<span class="small">#${i+1}</span> `:''}${l.odds?esc(l.odds):'<span class="small">no odds</span>'}${b.ew?` <span class="small">${esc(l.placeFrac)}</span>`:''}</span>
+    ${l.result==='pending'?`<span class="mini">
+      <button class="w" data-leg="${b.id}:${i}" data-r="won">Won</button>
+      ${b.ew?`<button class="p" data-leg="${b.id}:${i}" data-r="placed">Placed</button>`:''}
+      <button class="l" data-leg="${b.id}:${i}" data-r="lost">Lost</button>
+      <button data-leg="${b.id}:${i}" data-r="void">NR</button></span>`
+    :`<span class="badge ${l.result}">${RES_SHORT[l.result]}</span>`}</div>`).join('');
+  return `<div class="bet ${st}" data-edit="${b.id}">
     <div class="top"><div style="min-width:0">
-      <div class="sel">${esc(b.selection)}</div>
-      <div class="meta">${b.event?esc(b.event)+' · ':''}${esc(bookieName(b.bookieId))}<br>
-      ${b.points}pt${b.ew?' e/w':''} · ${stakeTxt} @ ${esc(b.odds)}${b.ew?` · ${esc(b.placeFrac)} odds`:''}</div>
+      <div class="sel">${esc(typeLabel(b))}${b.ew?' e/w':''}</div>
+      <div class="meta">${esc(bookieName(b.bookieId))}${b.selection?' · '+esc(b.selection):''}<br>
+      ${b.points}pt${n>1?(b.ptsMode==='total'?' total':' per line'):''} · ${stakeTxt}</div>
       ${b.notes?`<div class="meta">${esc(b.notes)}</div>`:''}
       <span class="lock">🔒 1pt = ${money(b.ppv)}</span>
     </div>
-    <div class="pl">${b.result==='pending'?`<span class="badge pending">Pending</span>`:`<div class="${cls(pl)}">${smoney(pl)}</div><div class="${cls(pl)}" style="font-size:13px;font-weight:400">(${pts(pl/b.ppv)})</div><span class="badge ${b.result}">${b.result}</span>`}</div></div>
-    ${b.result==='pending'?`<div class="settle">
-      <button class="w" data-settle="won" data-id="${b.id}">Won</button>
-      ${b.ew?`<button class="p" data-settle="placed" data-id="${b.id}">Placed</button>`:''}
-      <button class="l" data-settle="lost" data-id="${b.id}">Lost</button>
-      <button data-settle="void" data-id="${b.id}">Void/NR</button></div>`:''}
+    <div class="pl">${st==='pending'?`<span class="badge pending">Pending</span>${b.legs.length>1?`<div class="small" style="margin-top:4px">${done}/${b.legs.length} settled</div>`:''}`
+      :`<div class="${cls(pl)}">${smoney(pl)}</div><div class="${cls(pl)}" style="font-size:13px;font-weight:400">(${pts(pl/b.ppv)})</div><span class="badge ${st}">${statusLabel(st,b)}</span>`}</div></div>
+    <div class="legs">${legRows}</div>
   </div>`;
 }
 function viewBets(){
   let list=[...S.bets];
-  if(betFilter==='pending')list=list.filter(b=>b.result==='pending');
+  if(betFilter==='pending')list=list.filter(betPending);
   if(betFilter==='settled')list=list.filter(settled);
-  if(betSearch){const q=betSearch.toLowerCase();list=list.filter(b=>(b.selection+' '+(b.event||'')+' '+bookieName(b.bookieId)+' '+(b.notes||'')).toLowerCase().includes(q))}
+  if(betSearch){const q=betSearch.toLowerCase();list=list.filter(b=>(typeLabel(b)+' '+bookieName(b.bookieId)+' '+(b.notes||'')+' '+(b.selection||'')+' '+b.legs.map(l=>l.odds).join(' ')).toLowerCase().includes(q))}
   list.sort((a,b)=>b.date.localeCompare(a.date)||(b.created||0)-(a.created||0));
   const shown=list.slice(0,betLimit);
-  let html='',cur='';
   const dayPL={},dayP={};list.forEach(b=>{dayPL[b.date]=(dayPL[b.date]||0)+betPL(b);dayP[b.date]=(dayP[b.date]||0)+betPL(b)/b.ppv});
+  let html='',cur='';
   shown.forEach(b=>{if(b.date!==cur){cur=b.date;html+=`<div class="day"><span>${fmtDate(cur)}</span><span class="${cls(dayPL[cur])}">${plp(dayPL[cur],dayP[cur])}</span></div>`}html+=betCard(b)});
-  const pc=S.bets.filter(b=>b.result==='pending').length;
+  const pc=S.bets.filter(betPending).length;
   return `<h1>Bets <span class="tag">${S.bets.length} total</span></h1>
   <div class="chips">
     <button class="chip ${betFilter==='all'?'on':''}" data-f="all">All</button>
     <button class="chip ${betFilter==='pending'?'on':''}" data-f="pending">Pending (${pc})</button>
     <button class="chip ${betFilter==='settled'?'on':''}" data-f="settled">Settled</button>
   </div>
-  <input id="search" placeholder="Search horse, team, bookie…" value="${esc(betSearch)}">
+  <input id="search" placeholder="Search bet type, bookie, notes…" value="${esc(betSearch)}">
   ${html||`<div class="empty">No bets to show.</div>`}
   ${list.length>betLimit?`<button class="btn sec" id="more">Show more (${list.length-betLimit} older)</button>`:''}`;
 }
@@ -332,103 +406,126 @@ function bindBets(){
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{betFilter=b.dataset.f;betLimit=40;render()});
   const s=document.getElementById('search');s.oninput=()=>{betSearch=s.value;const pos=s.selectionStart;render();const n=document.getElementById('search');n.focus();n.setSelectionRange(pos,pos)};
   const m=document.getElementById('more');if(m)m.onclick=()=>{betLimit+=40;render()};
-  bindBetCards();
-}
-function bindBetCards(){
-  document.querySelectorAll('[data-settle]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();
-    const b=S.bets.find(x=>x.id===btn.dataset.id);b.result=btn.dataset.settle;save();
-    const pl=betPL(b);toast(`${b.selection}: ${b.result.toUpperCase()} ${plp(pl,pl/b.ppv)}`);render()});
+  document.querySelectorAll('[data-leg]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();
+    const[id,i]=btn.dataset.leg.split(':'),b=S.bets.find(x=>x.id===id),l=b.legs[+i],r=btn.dataset.r;
+    if((r==='won'||r==='placed')&&!l.dec){
+      const o=prompt(`Odds for ${b.legs.length>1?'selection '+(+i+1):'this bet'}? (e.g. 5/1, evs, 6.0)`,'');
+      const d=parseOdds(o);if(!d){if(o!==null)toast("Couldn't read those odds");return}
+      l.odds=o.trim();l.dec=d;
+    }
+    l.result=r;b.result=status(b);save();
+    if(!betPending(b)){const pl=betPL(b);toast(`${typeLabel(b)}: ${statusLabel(b.result,b).toUpperCase()} ${plp(pl,pl/b.ppv)}`)}
+    render()});
   document.querySelectorAll('[data-edit]').forEach(c=>c.onclick=()=>go('add',c.dataset.edit));
 }
 
 /* ============ ADD / EDIT BET ============ */
-let draft=null;
+let draft=null,draftKey;
+const newLeg=()=>({odds:'',dec:null,placeFrac:S.settings.placeTerms,result:'pending'});
 function newDraft(){
   const last=S.bets.slice().sort((a,b)=>(b.created||0)-(a.created||0))[0];
-  return{id:null,date:today(),bookieId:last?last.bookieId:(S.bookies[0]||{}).id||'',selection:'',event:'',points:1,ew:false,odds:'',placeFrac:S.settings.placeTerms,result:'pending',notes:'',ppv:S.settings.pointValue,ewMode:S.settings.ewMode};
+  return{id:null,date:today(),bookieId:last?last.bookieId:(S.bookies[0]||{}).id||'',type:'single',legs:[newLeg()],ew:false,
+    points:1,ptsMode:S.settings.ptsMode,ppv:S.settings.pointValue,ewMode:S.settings.ewMode,notes:''};
+}
+function setType(id,n){
+  const t=typeOf(id);draft.type=id;
+  const want=t.variable?Math.min(12,Math.max(4,n||draft.legs.length)):t.n;
+  while(draft.legs.length<want)draft.legs.push(newLeg());
+  draft.legs.length=want;
 }
 function viewAdd(){
-  const existing=editId?S.bets.find(b=>b.id===editId):null;
-  draft=existing?{...existing}:newDraft();
-  const d=draft;
+  const key=editId||'new';
+  if(draftKey!==key){const ex=editId&&S.bets.find(b=>b.id===editId);draft=ex?structuredClone(ex):newDraft();draftKey=key}
+  const d=draft,existing=!!d.id,t=typeOf(d.type),n=lineCount(d),terms=['1/4','1/5','1/3','1/6'];
+  const results=['pending','won',...(d.ew?['placed']:[]),'lost','void'];
   return `<h1>${existing?'Edit bet':'New bet'} <span class="tag">1pt = ${money(d.ppv)}</span></h1>
-  ${!S.bookies.length?`<div class="card small">Tip: add your bookmaker accounts in <strong style="font-weight:600">Bookies</strong> so balances update automatically.</div>`:''}
-  ${existing?`<div class="card small">🔒 This bet is locked at <strong style="font-weight:600">${money(d.ppv)} per point</strong>${d.ew?` (${d.ewMode==='perway'?'1pt each way':'1pt e/w split'})`:''}. Changing your point value in Settings will never change it.</div>`:''}
+  ${existing?`<div class="card small">🔒 Locked at <strong>${money(d.ppv)} per point</strong>${d.ew?` (${d.ewMode==='perway'?'1pt each way':'1pt e/w split'})`:''}. Changing your point value in Settings will never change this bet.</div>`:''}
+  ${!S.bookies.length?`<div class="card small">Tip: add your bookmaker accounts in <strong>Bookies</strong> so balances update automatically.</div>`:''}
   <div class="card">
-  <label>Selection</label><input id="f-sel" placeholder="e.g. Desert Crown" value="${esc(d.selection)}">
-  <label>Race / event (optional)</label><input id="f-ev" placeholder="e.g. 3:15 Cheltenham" value="${esc(d.event)}">
-  <div class="row">
-    <div><label>Date</label><input type="date" id="f-date" value="${d.date}"></div>
-    <div><label>Bookie</label><select id="f-bk"><option value="">— none —</option>${S.bookies.map(b=>`<option value="${b.id}" ${b.id===d.bookieId?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
+    <label>Date</label><input type="date" id="f-date" value="${d.date}">
+    <label style="margin-top:14px">Bookie</label>
+    <select id="f-bk"><option value="">— none —</option>${S.bookies.map(b=>`<option value="${b.id}" ${b.id===d.bookieId?'selected':''}>${esc(b.name)}</option>`).join('')}</select>
   </div>
-  <label>Bet type</label>
-  <div class="seg" id="f-type"><button data-v="win" class="${!d.ew?'on':''}">Win / single</button><button data-v="ew" class="${d.ew?'on':''}">Each way</button></div>
-  <div class="row">
-    <div><label>Points</label><input id="f-pts" inputmode="decimal" value="${d.points}"></div>
-    <div><label>Odds</label><input id="f-odds" placeholder="5/1, evs or 6.0" value="${esc(d.odds)}"></div>
+  <div class="card">
+    <label style="margin-top:0">Bet type</label>
+    <div class="types">${BET_TYPES.map(x=>{const ln=lineCount({type:x.id,legs:Array(x.variable?(d.type==='acca'?d.legs.length:4):x.n).fill(0)});
+      return `<button data-type="${x.id}" class="${d.type===x.id?'on':''}">${x.id==='acca'?'Acca':x.name}<span>${x.variable?'4+ sel':x.n+' sel'}${ln>1?' · '+ln+' bets':''}</span></button>`}).join('')}</div>
+    ${t.variable?`<div class="stepper"><button id="acc-minus">−</button><span>${d.legs.length} selections</span><button id="acc-plus">+</button></div>`:''}
+    <label>Win or each way</label>
+    <div class="seg" id="f-ew"><button data-v="win" class="${!d.ew?'on':''}">Win</button><button data-v="ew" class="${d.ew?'on':''}">Each way</button></div>
   </div>
-  <div class="seg" id="quickpts" style="margin-top:8px">${[0.5,1,1.5,2,3].map(p=>`<button data-p="${p}">${p}pt</button>`).join('')}</div>
-  <div id="ewbox" class="${d.ew?'':'hidden'}">
-    <label>Each-way place terms</label>
-    <div class="seg" id="f-pf">${['1/4','1/5','1/3','1/6'].map(f=>`<button data-v="${f}" class="${d.placeFrac===f?'on':''}">${f}</button>`).join('')}</div>
+  <div class="card">
+    <label style="margin-top:0">${d.legs.length>1?'Odds & result for each selection':'Odds & result'}</label>
+    ${d.legs.map((l,i)=>`<div class="leg">
+      ${d.legs.length>1?`<div class="legno">Selection ${i+1}</div>`:''}
+      <div class="row" style="margin-top:6px">
+        <input class="lo" data-i="${i}" placeholder="Odds e.g. 5/1, evs, 6.0" value="${esc(l.odds)}">
+        ${d.ew?`<select class="lpf" data-i="${i}" aria-label="Place terms">${terms.map(f=>`<option ${l.placeFrac===f?'selected':''}>${f}</option>`).join('')}</select>`:''}
+      </div>
+      <div class="seg lres" data-i="${i}" style="margin-top:8px">${results.map(r=>`<button data-v="${r}" class="${l.result===r?'on':''}">${RES_SHORT[r]}</button>`).join('')}</div>
+    </div>`).join('')}
+    ${d.ew?`<div class="hint">The small box next to the odds is the each-way place terms for that race.</div>`:''}
   </div>
-  <label>Result</label>
-  <div class="seg" id="f-res">${['pending','won','placed','lost','void'].map(r=>`<button data-v="${r}" class="${d.result===r?'on':''} ${r==='placed'&&!d.ew?'hidden':''}">${r==='void'?'Void/NR':r[0].toUpperCase()+r.slice(1)}</button>`).join('')}</div>
-  <label>Notes (optional)</label><textarea id="f-notes" placeholder="e.g. tipster NAP, BOG">${esc(d.notes)}</textarea>
-  <div class="preview" id="preview"></div>
+  <div class="card">
+    <label style="margin-top:0">Points</label>
+    <input id="f-pts" inputmode="decimal" value="${d.points}">
+    <div class="seg" id="quickpts" style="margin-top:8px">${[0.25,0.5,1,1.5,2].map(p=>`<button data-p="${p}">${p}pt</button>`).join('')}</div>
+    ${n>1?`<label>The points are…</label><div class="seg" id="f-pm"><button data-v="line" class="${d.ptsMode!=='total'?'on':''}">Per line</button><button data-v="total" class="${d.ptsMode==='total'?'on':''}">Total stake</button></div>`:''}
+    <div class="preview" id="preview"></div>
   </div>
+  <div class="card"><label style="margin-top:0">Notes (optional)</label><textarea id="f-notes" placeholder="e.g. tipster NAP, BOG">${esc(d.notes)}</textarea></div>
   <button class="btn" id="f-save">${existing?'Save changes':'Add bet'}</button>
-  ${existing?`<button class="btn danger" id="f-del">Delete bet</button>`:''}
-  ${existing?'':`<button class="btn sec" id="f-saveanother">Add & log another</button>`}`;
-}
-function readDraft(){
-  const d=draft;
-  d.selection=document.getElementById('f-sel').value.trim();
-  d.event=document.getElementById('f-ev').value.trim();
-  d.date=document.getElementById('f-date').value||today();
-  d.bookieId=document.getElementById('f-bk').value;
-  d.points=Number(String(document.getElementById('f-pts').value).replace(',','.'))||0;
-  d.odds=document.getElementById('f-odds').value.trim();
-  d.dec=parseOdds(d.odds);
-  d.notes=document.getElementById('f-notes').value.trim();
-  if(!d.ew&&d.result==='placed')d.result='lost';
+  ${existing?`<button class="btn danger" id="f-del">Delete bet</button>`:`<button class="btn sec" id="f-saveanother">Add & log another</button>`}`;
 }
 function updatePreview(){
-  readDraft();const d=draft,el=document.getElementById('preview');
-  const st=betStake(d);
-  if(!d.points){el.innerHTML='Enter points to see the stake.';return}
-  let h=`<strong style="font-weight:600">Stake:</strong> ${d.ew?`${money(r2(st/2))} each way = <strong style="font-weight:600">${money(st)}</strong> total`:money(st)}`;
-  if(d.dec){
-    const ws={...d,result:'won'},ps={...d,result:'placed'};
-    h+=`<br><strong style="font-weight:600">If it wins:</strong> returns ${money(betReturns(ws))} <span class="pos">${plp(betPL(ws),betPL(ws)/d.ppv)}</span>`;
-    if(d.ew)h+=`<br><strong style="font-weight:600">If it places:</strong> returns ${money(betReturns(ps))} <span class="${cls(betPL(ps))}">${plp(betPL(ps),betPL(ps)/d.ppv)}</span>`;
-    h+=`<br><span class="small">Decimal odds ${d.dec.toFixed(2)}</span>`;
-  }else if(d.odds)h+=`<br><span class="neg">Couldn't read those odds — try 5/1, evs or 6.0</span>`;
+  const d=draft,el=document.getElementById('preview');if(!el)return;
+  if(!(d.points>0)){el.innerHTML='Enter your points to see the stake.';return}
+  const n=lineCount(d),u=unit(d),stake=betStake(d);
+  let h=n>1?`<strong>${n} bets</strong> × ${money(r2(u))}${d.ew?' each way':''} = <strong>${money(stake)}</strong> total stake`
+           :`<strong>Stake:</strong> ${d.ew?`${money(r2(u))} each way = <strong>${money(stake)}</strong> total`:`<strong>${money(stake)}</strong>`}`;
+  h+=` <span class="small">(${r2(stake/d.ppv)}pts)</span>`;
+  const allOdds=d.legs.every(l=>l.dec);
+  if(allOdds){
+    const sim=r=>{const c={...d,legs:d.legs.map(l=>({...l,result:r}))};return{ret:betReturns(c),pl:betPL(c)}};
+    const w=sim('won');h+=`<br><strong>If ${d.legs.length>1?'all win':'it wins'}:</strong> returns ${money(w.ret)} <span class="pos">${plp(w.pl,w.pl/d.ppv)}</span>`;
+    if(d.ew){const p=sim('placed');h+=`<br><strong>If ${d.legs.length>1?'all place':'it places'}:</strong> returns ${money(p.ret)} <span class="${cls(p.pl)}">${plp(p.pl,p.pl/d.ppv)}</span>`}
+  }else if(d.legs.some(l=>l.odds&&!l.dec))h+=`<br><span class="neg">Couldn't read some odds — try 5/1, evs or 6.0</span>`;
+  if(!betPending(d)){const pl=betPL(d);h+=`<br><strong>Result:</strong> <span class="${cls(pl)}">${statusLabel(status(d),d)} ${plp(pl,pl/d.ppv)}</span>`}
   el.innerHTML=h;
 }
 function bindAdd(){
-  const seg=(id,fn)=>document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));b.classList.add('on');fn(b.dataset.v);updatePreview()});
-  seg('f-type',v=>{draft.ew=v==='ew';document.getElementById('ewbox').classList.toggle('hidden',!draft.ew);
-    document.querySelector('#f-res [data-v="placed"]').classList.toggle('hidden',!draft.ew);
-    if(!draft.ew&&draft.result==='placed'){draft.result='pending';document.querySelectorAll('#f-res button').forEach(x=>x.classList.toggle('on',x.dataset.v==='pending'))}});
-  seg('f-pf',v=>draft.placeFrac=v);
-  seg('f-res',v=>draft.result=v);
-  document.querySelectorAll('#quickpts button').forEach(b=>b.onclick=()=>{document.getElementById('f-pts').value=b.dataset.p;updatePreview()});
-  ['f-pts','f-odds','f-sel','f-ev','f-date','f-bk','f-notes'].forEach(id=>document.getElementById(id).addEventListener('input',updatePreview));
+  const d=draft,$=id=>document.getElementById(id);
+  $('f-date').oninput=e=>d.date=e.target.value||today();
+  $('f-bk').onchange=e=>d.bookieId=e.target.value;
+  $('f-notes').oninput=e=>d.notes=e.target.value;
+  $('f-pts').oninput=e=>{d.points=Number(String(e.target.value).replace(',','.'))||0;updatePreview()};
+  document.querySelectorAll('#quickpts button').forEach(b=>b.onclick=()=>{$('f-pts').value=b.dataset.p;d.points=+b.dataset.p;updatePreview()});
+  document.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{setType(b.dataset.type);render()});
+  const am=$('acc-minus'),ap=$('acc-plus');
+  if(am)am.onclick=()=>{setType('acca',d.legs.length-1);render()};
+  if(ap)ap.onclick=()=>{setType('acca',d.legs.length+1);render()};
+  document.querySelectorAll('#f-ew button').forEach(b=>b.onclick=()=>{d.ew=b.dataset.v==='ew';if(!d.ew)d.legs.forEach(l=>{if(l.result==='placed')l.result='pending'});render()});
+  document.querySelectorAll('#f-pm button').forEach(b=>b.onclick=()=>{d.ptsMode=b.dataset.v;document.querySelectorAll('#f-pm button').forEach(x=>x.classList.toggle('on',x===b));updatePreview()});
+  document.querySelectorAll('.lo').forEach(inp=>inp.oninput=()=>{const l=d.legs[+inp.dataset.i];l.odds=inp.value.trim();l.dec=parseOdds(l.odds);updatePreview()});
+  document.querySelectorAll('.lpf').forEach(sel=>sel.onchange=()=>{d.legs[+sel.dataset.i].placeFrac=sel.value;updatePreview()});
+  document.querySelectorAll('.lres').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    d.legs[+seg.dataset.i].result=b.dataset.v;seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));updatePreview()}));
   updatePreview();
   const doSave=again=>{
-    readDraft();const d=draft;
-    if(!d.selection)return toast('Add a selection name');
     if(!(d.points>0))return toast('Points must be more than 0');
-    if(d.result!=='pending'&&d.result!=='lost'&&d.result!=='void'&&!d.dec)return toast('Enter valid odds to settle as won/placed');
-    if(d.id){const i=S.bets.findIndex(b=>b.id===d.id);const orig=S.bets[i];d.ppv=orig.ppv;d.ewMode=orig.ewMode;d.locked=true;S.bets[i]=d;toast('Bet updated')}
-    else{d.id=uid();d.created=Date.now();d.locked=true;S.bets.push(d);toast('Bet added — '+money(betStake(d)))}
-    save();
-    if(again){editId=null;render();window.scrollTo(0,0);document.getElementById('f-sel').focus()}else go('bets');
+    const bad=d.legs.findIndex(l=>(l.result==='won'||l.result==='placed')&&!l.dec);
+    if(bad>=0)return toast(`Enter odds for ${d.legs.length>1?'selection '+(bad+1):'this bet'} to settle it`);
+    const odd=d.legs.findIndex(l=>l.odds&&!l.dec);
+    if(odd>=0)return toast(`Couldn't read the odds for ${d.legs.length>1?'selection '+(odd+1):'this bet'}`);
+    d.result=status(d);d.locked=true;
+    if(d.id){const i=S.bets.findIndex(b=>b.id===d.id),orig=S.bets[i];d.ppv=orig.ppv;d.ewMode=orig.ewMode;S.bets[i]=d;toast('Bet updated')}
+    else{d.id=uid();d.created=Date.now();S.bets.push(d);toast(`${typeLabel(d)} added — ${money(betStake(d))}`)}
+    save();draftKey=undefined;
+    if(again){editId=null;render();window.scrollTo(0,0)}else go('bets');
   };
-  document.getElementById('f-save').onclick=()=>doSave(false);
-  const a=document.getElementById('f-saveanother');if(a)a.onclick=()=>doSave(true);
-  const del=document.getElementById('f-del');if(del)del.onclick=()=>{if(confirm('Delete this bet?')){S.bets=S.bets.filter(b=>b.id!==draft.id);save();toast('Bet deleted');go('bets')}};
+  $('f-save').onclick=()=>doSave(false);
+  const a=$('f-saveanother');if(a)a.onclick=()=>doSave(true);
+  const del=$('f-del');if(del)del.onclick=()=>{if(confirm('Delete this bet?')){S.bets=S.bets.filter(b=>b.id!==d.id);save();draftKey=undefined;toast('Bet deleted');go('bets')}};
 }
 
 /* ============ BOOKIES ============ */
@@ -436,9 +533,8 @@ function viewBookies(){
   const total=S.bookies.reduce((a,b)=>a+bookieBalance(b),0);
   const cards=S.bookies.map(bk=>{
     const bal=bookieBalance(bk),bets=S.bets.filter(b=>b.bookieId===bk.id);
-    const pl=bets.reduce((a,b)=>a+betPL(b),0),plpts=bets.reduce((a,b)=>a+betPL(b)/b.ppv,0),pend=bets.filter(b=>b.result==='pending');
-    const dep=(bk.txns||[]).reduce((a,t)=>a+Number(t.amount),0);
-    const open=openBookie===bk.id;
+    const pl=bets.reduce((a,b)=>a+betPL(b),0),plpts=bets.reduce((a,b)=>a+betPL(b)/b.ppv,0),pend=bets.filter(betPending);
+    const dep=(bk.txns||[]).reduce((a,t)=>a+Number(t.amount),0),open=openBookie===bk.id;
     return `<div class="card">
       <div class="bk" data-open="${bk.id}"><div style="min-width:0"><div class="name">${esc(bk.name)}</div>
         <div class="small">Started ${money(Number(bk.start)||0)} · P/L <span class="${cls(pl)}">${plp(pl,plpts)}</span>${pend.length?` · <span style="color:var(--amber)">${pend.length} pending</span>`:''}</div></div>
@@ -457,7 +553,8 @@ function viewBookies(){
   return `<h1>Bookies <span class="tag">Bank ${money(total)}</span></h1>
   ${cards||`<div class="empty">No bookmaker accounts yet — add your first below.</div>`}
   <div class="card"><div style="font-weight:600">Add bookmaker account</div>
-    <div class="row"><div><label>Name</label><input id="nb-name" placeholder="e.g. Bet365"></div><div><label>Starting balance £</label><input id="nb-start" inputmode="decimal" placeholder="0.00"></div></div>
+    <label>Name</label><input id="nb-name" placeholder="e.g. Bet365">
+    <label>Starting balance £</label><input id="nb-start" inputmode="decimal" placeholder="0.00">
     <button class="btn" id="nb-add">Add bookie</button></div>
   <div class="hint">Balance = starting balance + deposits − withdrawals + settled profit/loss − stakes on pending bets. Tap a bookie to deposit, withdraw or edit.</div>`;
 }
@@ -476,24 +573,26 @@ function bindBookies(){
 
 /* ============ SETTINGS ============ */
 function viewSettings(){
-  const st=S.settings;
+  const st=S.settings,nb=S.bets.length;
   return `<h1>Settings</h1>
   <div class="card">
-    <label>Value of 1 point (£)</label>
+    <label style="margin-top:0">Value of 1 point (£)</label>
     <input id="s-pv" inputmode="decimal" value="${st.pointValue}">
     <div class="seg" style="margin-top:8px">${[2,5,10,20,25,50].map(v=>`<button data-pv="${v}" class="${st.pointValue==v?'on':''}">£${v}</button>`).join('')}</div>
-    <div class="hint">🔒 Changing this only affects <strong style="font-weight:600">new</strong> bets. ${S.bets.length?`Your ${S.bets.length} existing bet${S.bets.length===1?' is':'s are'} locked at the value ${S.bets.length===1?'it was':'they were'} placed at`:'Each bet is locked at the value it was placed at'}, so past stakes, profits and stats never change.</div>
+    <div class="hint">🔒 Changing this only affects <strong>new</strong> bets. ${nb?`Your ${nb} existing bet${nb===1?' is':'s are'} locked at the value ${nb===1?'it was':'they were'} placed at`:'Each bet is locked at the value it was placed at'}, so past stakes, profits and stats never change.</div>
   </div>
   <div class="card">
-    <label>How "1pt e/w" is staked</label>
-    <div class="seg" id="s-ew">
-      <button data-v="split" class="${st.ewMode==='split'?'on':''}">Split: 1pt total</button>
-      <button data-v="perway" class="${st.ewMode==='perway'?'on':''}">1pt each way</button>
-    </div>
-    <div class="hint" id="ew-hint"></div>
+    <label style="margin-top:0">How "1pt e/w" is staked</label>
+    <div class="seg" id="s-ew"><button data-v="split" class="${st.ewMode==='split'?'on':''}">Split: 1pt total</button><button data-v="perway" class="${st.ewMode==='perway'?'on':''}">1pt each way</button></div>
+    <div class="hint">${st.ewMode==='split'?`1pt e/w = ${money(st.pointValue/2)} each way (${money(st.pointValue)} total)`:`1pt e/w = ${money(st.pointValue)} each way (${money(st.pointValue*2)} total)`}</div>
   </div>
   <div class="card">
-    <label>Default each-way place terms</label>
+    <label style="margin-top:0">Points on multiples (Trixie, Yankee etc.) are usually…</label>
+    <div class="seg" id="s-pm"><button data-v="line" class="${st.ptsMode!=='total'?'on':''}">Per line</button><button data-v="total" class="${st.ptsMode==='total'?'on':''}">Total stake</button></div>
+    <div class="hint">${st.ptsMode!=='total'?`e.g. 1pt Trixie = 4 bets × ${money(st.pointValue)} = ${money(st.pointValue*4)}`:`e.g. 1pt Trixie = ${money(st.pointValue)} spread across 4 bets`}. You can still change it on each bet.</div>
+  </div>
+  <div class="card">
+    <label style="margin-top:0">Default each-way place terms</label>
     <div class="seg" id="s-pt">${['1/4','1/5','1/3','1/6'].map(f=>`<button data-v="${f}" class="${st.placeTerms===f?'on':''}">${f}</button>`).join('')}</div>
   </div>
   <h2>Backup</h2>
@@ -508,26 +607,25 @@ function viewSettings(){
 }
 function bindSettings(){
   const st=S.settings;
-  const hint=()=>{document.getElementById('ew-hint').innerHTML=st.ewMode==='split'
-    ?`1pt e/w = ${money(st.pointValue/2)} each way (${money(st.pointValue)} total)`
-    :`1pt e/w = ${money(st.pointValue)} each way (${money(st.pointValue*2)} total)`};hint();
   const pv=document.getElementById('s-pv');
   pv.onchange=()=>{const v=Number(pv.value);if(v>0){st.pointValue=v;save();toast('New bets: 1pt = '+money(v)+' · old bets unchanged');render()}else toast('Enter a valid amount')};
   document.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{st.pointValue=Number(b.dataset.pv);save();toast('New bets: 1pt = '+money(st.pointValue)+' · old bets unchanged');render()});
   document.querySelectorAll('#s-ew button').forEach(b=>b.onclick=()=>{st.ewMode=b.dataset.v;save();render()});
+  document.querySelectorAll('#s-pm button').forEach(b=>b.onclick=()=>{st.ptsMode=b.dataset.v;save();render()});
   document.querySelectorAll('#s-pt button').forEach(b=>b.onclick=()=>{st.placeTerms=b.dataset.v;save();render()});
+  draftKey=undefined; // new-bet form picks up changed defaults
   const dl=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
   document.getElementById('exp').onclick=()=>{exportBackup();render()};
   document.getElementById('csv').onclick=()=>{
     const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-    const rows=[['Date','Bookie','Selection','Event','Points','Point value','Each way','Place terms','Odds','Stake','Result','Returns','P/L £','P/L pts','Notes']];
-    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>rows.push([b.date,bookieName(b.bookieId),b.selection,b.event,b.points,b.ppv,b.ew?'Yes':'No',b.ew?b.placeFrac:'',b.odds,betStake(b),b.result,betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes]));
+    const rows=[['Date','Bookie','Bet type','Selections','Odds','Leg results','Each way','Place terms','Bets (lines)','Points','Points are','Point value','Stake','Result','Returns','P/L £','P/L pts','Notes']];
+    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{const st=status(b);rows.push([b.date,bookieName(b.bookieId),typeLabel(b),b.legs.length,b.legs.map(l=>l.odds).join(' / '),b.legs.map(l=>RES_SHORT[l.result]).join(' / '),b.ew?'Yes':'No',b.ew?b.legs.map(l=>l.placeFrac).join(' / '):'',lineCount(b),b.points,lineCount(b)>1?(b.ptsMode==='total'?'Total':'Per line'):'',b.ppv,betStake(b),statusLabel(st,b),betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes])});
     dl(`bets-${today()}.csv`,rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')};
   const f=document.getElementById('impfile');
   document.getElementById('imp').onclick=()=>f.click();
   f.onchange=()=>{const file=f.files[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d.settings||!Array.isArray(d.bets))throw 0;
-    if(confirm(`Replace current data with this backup (${d.bets.length} bets, ${d.bookies.length} bookies)?`)){S=normalise(d);save();toast('Backup restored');render()}}catch(e){toast('That file isn\'t a valid backup')}};rd.readAsText(file)};
-  document.getElementById('wipe').onclick=()=>{if(confirm('Delete ALL bets and bookies? This cannot be undone.')&&confirm('Are you sure? Export a backup first if unsure.')){S=structuredClone(defaultState);save();render();toast('All data cleared')}};
+    if(confirm(`Replace current data with this backup (${d.bets.length} bets, ${(d.bookies||[]).length} bookies)?`)){S=normalise(d);save();toast('Backup restored');render()}}catch(e){toast("That file isn't a valid backup")}};rd.readAsText(file)};
+  document.getElementById('wipe').onclick=()=>{if(confirm('Delete ALL bets and bookies? This cannot be undone.')&&confirm('Are you sure? Export a backup first if unsure.')){S=normalise(null);save();render();toast('All data cleared')}};
 }
 
 init();
