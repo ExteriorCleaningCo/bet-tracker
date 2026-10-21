@@ -102,6 +102,21 @@ input[type=date]{min-width:0;-webkit-appearance:none;appearance:none;min-height:
 .leg{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
 .leg:first-of-type{border-top:0;margin-top:0;padding-top:0}
 .legno{font-size:13px;font-weight:500}
+.tabbar button{min-width:0}
+.xtag{display:inline-block;font-size:11px;font-weight:500;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--muted);vertical-align:middle}
+.hedge{display:block;width:100%;margin-top:10px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;color:var(--text)}
+input.xback{background:#e3f1ff;border-color:#b6dbff}
+input.xlay{background:#fde8ec;border-color:#f7c3cd}
+.verdict{border-radius:14px;padding:16px;margin-bottom:10px;color:#fff;background:#111;line-height:1.45;font-size:14px}
+.verdict.lay{background:#15803d}.verdict.back{background:#1d4ed8}
+.verdict .vword{font-size:26px;font-weight:600;letter-spacing:.04em;margin-bottom:4px}
+.verdict .vsub{margin-top:8px;opacity:.85;font-size:13px}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.opt.best{border:2px solid #111}
+.otitle{font-weight:600;font-size:15px}
+.ostake{margin:8px 0 4px;font-size:15px}
+.orow{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:5px 0;border-top:1px dashed var(--line)}
+.orow span:last-child{white-space:nowrap;font-weight:500}
 .clist{display:flex;flex-wrap:wrap;gap:6px}
 .cchip{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:5px 6px 5px 12px;font-size:14px}
 .cchip button{border:0;background:none;color:var(--muted);font-size:13px;padding:2px 6px}
@@ -135,6 +150,7 @@ select.lpf{flex:0 0 84px}
   <button data-tab="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg>Stats</button>
   <button data-tab="bets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Bets</button>
   <button data-tab="add" class="add"><span class="c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg></span></button>
+  <button data-tab="ex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>Exchange</button>
   <button data-tab="bookies"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Bookies</button>
   <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
 </nav>
@@ -186,16 +202,21 @@ function linesOf(b){const t=typeOf(b.type),n=b.legs.length,min=t.min==='all'?n:t
 const lineCount=b=>linesOf(b).length;
 const legName=(l,i,n)=>l.name||(n>1?'Selection '+(i+1):'Selection');
 const legRace=l=>[l.time,l.course].filter(Boolean).join(' ');
-function typeLabel(b){const t=typeOf(b.type);return t.id==='acca'?`${b.legs.length}-fold Acca`:t.name}
+const isLay=b=>b&&b.kind==='lay';
+const num=v=>Number(String(v??'').replace(/[£,\s]/g,''))||0;
+const layLiab=b=>r2(num(b.layStake)*Math.max(0,num(b.layOdds)-1));
+const layWin=b=>r2(num(b.layStake)*(1-num(b.comm)/100));
+function typeLabel(b){if(isLay(b))return 'Lay';const t=typeOf(b.type);return t.id==='acca'?`${b.legs.length}-fold Acca`:t.name}
 
 /* ============ BET MATHS ============
    unit = stake per line, per way. Each bet keeps its own point value (ppv),
    e/w rule and points mode forever — settings only affect new bets. */
 function unit(b){
+  if(isLay(b))return 0;
   const base=b.points*b.ppv,perLine=b.ptsMode==='total'?base/lineCount(b):base;
   return b.ew?(b.ewMode==='perway'?perLine:perLine/2):perLine;
 }
-function betStake(b){return r2(unit(b)*lineCount(b)*(b.ew?2:1))}
+function betStake(b){if(isLay(b))return layLiab(b);return r2(unit(b)*lineCount(b)*(b.ew?2:1))}
 const legWin=l=>l.result==='won'?(l.dec||0):l.result==='void'?1:0;
 const legPlace=l=>(l.result==='won'||l.result==='placed')?1+((l.dec||1)-1)*frac(l.placeFrac):l.result==='void'?1:0;
 const betPending=b=>b.legs.some(l=>l.result==='pending');
@@ -205,7 +226,9 @@ const hasOverride=b=>b.retOverride!=null&&b.retOverride!==''&&!isNaN(+b.retOverr
    the actual returns entered override the calculated figure. */
 function betReturns(b){if(betPending(b))return 0;return hasOverride(b)?r2(+b.retOverride):calcReturns(b)}
 function calcReturns(b){
-  if(betPending(b))return 0;const u=unit(b);let r=0;
+  if(betPending(b))return 0;
+  if(isLay(b)){const r=b.legs[0].result;if(r==='void')return layLiab(b);if(r==='won')return 0;return r2(layLiab(b)+layWin(b))}
+  const u=unit(b);let r=0;
   for(const line of linesOf(b)){
     r+=u*line.reduce((a,i)=>a*legWin(b.legs[i]),1);
     if(b.ew)r+=u*line.reduce((a,i)=>a*legPlace(b.legs[i]),1);
@@ -217,6 +240,7 @@ function status(b){
   if(betPending(b))return 'pending';
   if(b.legs.every(l=>l.result==='void'))return 'void';
   const r=betReturns(b),s=betStake(b);
+  if(isLay(b))return r>s?'won':'lost';
   if(r<=0.004)return 'lost';
   if(b.legs.length===1)return b.legs[0].result==='placed'?'placed':'won';
   return r>=s?'won':'placed';
@@ -228,7 +252,7 @@ const statusLabel=(st,b)=>st==='placed'&&b.legs.length>1?'Part return':st==='voi
    browser is asked to mark storage as persistent. Every change saves instantly. */
 const KEY='betTracker.v1';
 const DEFAULT_COURSES=['Bath','Kempton','Newcastle','Newmarket','Pontefract','Southwell','Wolverhampton','Yarmouth'];
-const defaultState={settings:{pointValue:5,placeTerms:'1/5',ewMode:'split',ptsMode:'line',courses:DEFAULT_COURSES.slice()},bookies:[],bets:[]};
+const defaultState={settings:{pointValue:5,placeTerms:'1/5',ewMode:'split',ptsMode:'line',commission:5,courses:DEFAULT_COURSES.slice()},bookies:[],bets:[]};
 const sortCourses=a=>[...new Set(a.map(c=>String(c).trim()).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'en-GB',{sensitivity:'base'}));
 function addCourse(name){const n=String(name||'').trim().replace(/\s+/g,' ');if(!n)return '';
   const ex=S.settings.courses.find(c=>c.toLowerCase()===n.toLowerCase());if(ex)return ex;
@@ -247,7 +271,7 @@ function normalise(d){
     }
     b.legs.forEach(l=>{if(l.name==null)l.name='';if(l.course==null)l.course='';if(l.time==null)l.time=''});
     if(b.selection&&!b.legs[0].name){b.legs[0].name=b.selection;if(b.event&&!b.legs[0].course)b.legs[0].course=b.event}
-    if(!b.type)b.type='single';if(!b.ptsMode)b.ptsMode='line';
+    if(!b.type)b.type='single';if(!b.ptsMode)b.ptsMode='line';if(!b.kind)b.kind='back';
     // lock: bets never read the current point value
     if(!(b.ppv>0))b.ppv=s.settings.pointValue;if(!b.ewMode)b.ewMode=s.settings.ewMode;b.locked=true;
     b.result=status(b);
@@ -309,6 +333,10 @@ function bookieBalance(bk){
   S.bets.filter(b=>b.bookieId===bk.id).forEach(b=>{bal+=betPending(b)?-betStake(b):betPL(b)});
   return r2(bal);
 }
+/* When a back bet's horse is settled, any lay logged against it settles too */
+function syncLays(b){if(isLay(b))return;S.bets.forEach(x=>{if(isLay(x)&&x.linkedTo===b.id){const l=b.legs[x.linkedLeg||0];
+  if(l&&l.result!=='pending'&&x.legs[0].result==='pending'){x.legs[0].result=l.result==='placed'?'lost':l.result;x.result=status(x)}}})}
+const exchangeBookie=()=>S.bookies.find(b=>/betfair|exchange|smarkets|matchbook|betdaq/i.test(b.name));
 const bookieName=id=>(S.bookies.find(b=>b.id===id)||{}).name||'No bookie';
 
 /* ============ ROUTER ============ */
@@ -317,8 +345,8 @@ function go(t,id){tab=t;editId=id||null;render();window.scrollTo(0,0)}
 document.querySelectorAll('#tabbar button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 function render(){
   document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  document.getElementById('app').innerHTML=({dash:viewDash,bets:viewBets,add:viewAdd,bookies:viewBookies,settings:viewSettings})[tab]();
-  ({dash:bindDash,bets:bindBets,add:bindAdd,bookies:bindBookies,settings:bindSettings})[tab]();
+  document.getElementById('app').innerHTML=({dash:viewDash,bets:viewBets,add:viewAdd,ex:viewEx,bookies:viewBookies,settings:viewSettings})[tab]();
+  ({dash:bindDash,bets:bindBets,add:bindAdd,ex:bindEx,bookies:bindBookies,settings:bindSettings})[tab]();
 }
 
 /* ============ DASHBOARD ============ */
@@ -331,7 +359,7 @@ function viewDash(){
   const types=[['all','All'],['year','Year'],['month','Month'],['week','Week'],['day','Day']];
   const byBk={};list.filter(settled).forEach(b=>{const k=b.bookieId||'none';byBk[k]=byBk[k]||{st:0,pl:0,p:0,n:0};byBk[k].st+=betStake(b);byBk[k].pl+=betPL(b);byBk[k].p+=betPL(b)/b.ppv;byBk[k].n++});
   const bkRows=Object.entries(byBk).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<tr><td>${esc(k==='none'?'No bookie':bookieName(k))}</td><td>${v.n}</td><td>${money(v.st)}</td><td class="${cls(v.pl)}">${plp(v.pl,v.p)}</td></tr>`).join('');
-  const byType={};list.filter(settled).forEach(b=>{const k=typeOf(b.type).name;byType[k]=byType[k]||{st:0,pl:0,p:0,n:0};byType[k].st+=betStake(b);byType[k].pl+=betPL(b);byType[k].p+=betPL(b)/b.ppv;byType[k].n++});
+  const byType={};list.filter(settled).forEach(b=>{const k=isLay(b)?'Lay (exchange)':typeOf(b.type).name;byType[k]=byType[k]||{st:0,pl:0,p:0,n:0};byType[k].st+=betStake(b);byType[k].pl+=betPL(b);byType[k].p+=betPL(b)/b.ppv;byType[k].n++});
   const tyRows=Object.entries(byType).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${money(v.st)}</td><td class="${cls(v.pl)}">${plp(v.pl,v.p)}</td></tr>`).join('');
   return `
   <h1><span class="title">${LOGO}Bet Tracker</span> <span class="tag">1pt = ${money(S.settings.pointValue)}</span></h1>
@@ -377,7 +405,28 @@ function bindDash(){
 
 /* ============ BETS LIST ============ */
 const RES_SHORT={pending:'Pending',won:'Won',placed:'Placed',lost:'Lost',void:'NR'};
+function layCard(b){
+  const st=status(b),pl=betPL(b),l=b.legs[0],liab=layLiab(b);
+  return `<div class="bet ${st}" data-edit="${b.id}">
+    <div class="top"><div style="min-width:0">
+      <div class="sel">Lay <span class="xtag">Exchange</span></div>
+      <div class="meta">${esc(bookieName(b.bookieId))}<br>Lay ${money(num(b.layStake))} @ ${esc(b.layOdds)} · liability ${money(liab)} · ${num(b.comm)}% comm</div>
+      ${b.notes?`<div class="meta">${esc(b.notes)}</div>`:''}
+      <span class="lock">🔒 1pt = ${money(b.ppv)}</span>
+    </div>
+    <div class="pl">${st==='pending'?`<span class="badge pending">Pending</span>`
+      :`<div class="${cls(pl)}">${smoney(pl)}</div><div class="${cls(pl)}" style="font-size:13px;font-weight:400">(${pts(pl/b.ppv)})</div><span class="badge ${st}">${statusLabel(st,b)}</span>`}</div></div>
+    <div class="legs"><div class="legrow"><span class="legtxt"><span class="hn">${esc(legName(l,0,1))}</span>${legRace(l)?`<span class="small"> · ${esc(legRace(l))}</span>`:''}<br><span class="small">Horse wins: −${money(liab)} · Horse loses: +${money(layWin(b))}</span></span>
+    ${l.result==='pending'?`<span class="mini"><span class="small" style="align-self:center">Horse:</span>
+      <button class="l" data-leg="${b.id}:0" data-r="won">Won</button>
+      <button class="w" data-leg="${b.id}:0" data-r="lost">Lost</button>
+      <button data-leg="${b.id}:0" data-r="void">NR</button></span>`
+    :`<span class="badge ${l.result==='won'?'lost':l.result==='void'?'void':'won'}">${l.result==='won'?'Horse won':l.result==='void'?'NR':'Horse lost'}</span>`}</div></div>
+  </div>`;
+}
+const hedgeable=b=>!isLay(b)&&betPending(b)&&b.legs.filter(l=>l.result==='pending').length===1;
 function betCard(b){
+  if(isLay(b))return layCard(b);
   const st=status(b),stake=betStake(b),pl=betPL(b),n=lineCount(b),u=unit(b);
   const done=b.legs.filter(l=>l.result!=='pending').length;
   const stakeTxt=(n>1||b.ew)?`${money(stake)} (${money(r2(u))}${b.ew?' e/w':''}${n>1?' × '+n+' lines':''})`:money(stake);
@@ -399,6 +448,7 @@ function betCard(b){
     <div class="pl">${st==='pending'?`<span class="badge pending">Pending</span>${b.legs.length>1?`<div class="small" style="margin-top:4px">${done}/${b.legs.length} settled</div>`:''}`
       :`<div class="${cls(pl)}">${smoney(pl)}</div><div class="${cls(pl)}" style="font-size:13px;font-weight:400">(${pts(pl/b.ppv)})</div><span class="badge ${st}">${statusLabel(st,b)}</span>`}</div></div>
     <div class="legs">${legRows}</div>
+    ${hedgeable(b)?`<button class="hedge" data-hedge="${b.id}">⇄ Check exchange — back, lay or leave?</button>`:''}
   </div>`;
 }
 function viewBets(){
@@ -433,9 +483,10 @@ function bindBets(){
       const d=parseOdds(o);if(!d){if(o!==null)toast("Couldn't read those odds");return}
       l.odds=o.trim();l.dec=d;
     }
-    l.result=r;b.result=status(b);save();
+    l.result=r;b.result=status(b);syncLays(b);save();
     if(!betPending(b)){const pl=betPL(b);toast(`${b.legs.length===1&&b.legs[0].name?b.legs[0].name:typeLabel(b)}: ${statusLabel(b.result,b).toUpperCase()} ${plp(pl,pl/b.ppv)}`)}
     render()});
+  document.querySelectorAll('[data-hedge]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();EX.mode='have';EX.src=btn.dataset.hedge;EX.back='';EX.lay='';EX.custom='';go('ex')});
   document.querySelectorAll('[data-edit]').forEach(c=>c.onclick=()=>go('add',c.dataset.edit));
 }
 
@@ -444,7 +495,7 @@ let draft=null,draftKey;
 const newLeg=()=>({name:'',course:'',time:'',odds:'',dec:null,placeFrac:S.settings.placeTerms,result:'pending'});
 function newDraft(){
   const last=S.bets.slice().sort((a,b)=>(b.created||0)-(a.created||0))[0];
-  return{id:null,date:today(),bookieId:last?last.bookieId:(S.bookies[0]||{}).id||'',type:'single',legs:[newLeg()],ew:false,
+  return{id:null,kind:'back',date:today(),bookieId:last&&!isLay(last)?last.bookieId:((S.bookies.find(b=>b!==exchangeBookie())||S.bookies[0])||{}).id||'',type:'single',legs:[newLeg()],ew:false,
     points:1,ptsMode:S.settings.ptsMode,ppv:S.settings.pointValue,ewMode:S.settings.ewMode,notes:''};
 }
 function setType(id,n){
@@ -456,9 +507,11 @@ function setType(id,n){
 function viewAdd(){
   const key=editId||'new';
   if(draftKey!==key){const ex=editId&&S.bets.find(b=>b.id===editId);draft=ex?structuredClone(ex):newDraft();draftKey=key}
+  if(isLay(draft))return viewLayForm();
   const d=draft,existing=!!d.id,t=typeOf(d.type),n=lineCount(d),terms=['1/4','1/5','1/3','1/6'];
   const results=['pending','won',...(d.ew?['placed']:[]),'lost','void'];
   return `<h1>${existing?'Edit bet':'New bet'} <span class="tag">1pt = ${money(d.ppv)}</span></h1>
+  ${kindToggle(d)}
   ${existing?`<div class="card small">🔒 Locked at <strong>${money(d.ppv)} per point</strong>${d.ew?` (${d.ewMode==='perway'?'1pt each way':'1pt e/w split'})`:''}. Changing your point value in Settings will never change this bet.</div>`:''}
   ${!S.bookies.length?`<div class="card small">Tip: add your bookmaker accounts in <strong>Bookies</strong> so balances update automatically.</div>`:''}
   <div class="card">
@@ -478,11 +531,7 @@ function viewAdd(){
     <label style="margin-top:0">${d.legs.length>1?'Your selections':'Your selection'}</label>
     ${d.legs.map((l,i)=>`<div class="leg">
       ${d.legs.length>1?`<div class="legno">Selection ${i+1}</div>`:''}
-      <input class="ln" data-i="${i}" placeholder="Horse name" value="${esc(l.name)}" style="margin-top:6px" autocapitalize="words">
-      <div class="row" style="margin-top:8px">
-        <select class="lc" data-i="${i}" aria-label="Course"><option value="">Course…</option>${sortCourses([...S.settings.courses,...(l.course?[l.course]:[])]).map(c=>`<option ${c===l.course?'selected':''}>${esc(c)}</option>`).join('')}<option value="__new">+ Add new course…</option></select>
-        <input class="lt" data-i="${i}" type="time" value="${esc(l.time)}" aria-label="Race time">
-      </div>
+      ${legFields(l,i)}
       <div class="row" style="margin-top:8px">
         <input class="lo" data-i="${i}" placeholder="Odds e.g. 5/1, evs, 6.0" value="${esc(l.odds)}">
         ${d.ew?`<select class="lpf" data-i="${i}" aria-label="Place terms">${terms.map(f=>`<option ${l.placeFrac===f?'selected':''}>${f}</option>`).join('')}</select>`:''}
@@ -507,6 +556,84 @@ function viewAdd(){
   <button class="btn" id="f-save">${existing?'Save changes':'Add bet'}</button>
   ${existing?`<button class="btn danger" id="f-del">Delete bet</button>`:`<button class="btn sec" id="f-saveanother">Add & log another</button>`}`;
 }
+const kindToggle=d=>d.id?'':`<div class="seg" id="f-kind" style="margin-bottom:10px"><button data-v="back" class="${!isLay(d)?'on':''}">Back bet</button><button data-v="lay" class="${isLay(d)?'on':''}">Lay bet (exchange)</button></div>`;
+const legFields=(l,i)=>`<input class="ln" data-i="${i}" placeholder="Horse name" value="${esc(l.name)}" style="margin-top:6px" autocapitalize="words">
+      <div class="row" style="margin-top:8px">
+        <select class="lc" data-i="${i}" aria-label="Course"><option value="">Course…</option>${sortCourses([...S.settings.courses,...(l.course?[l.course]:[])]).map(c=>`<option ${c===l.course?'selected':''}>${esc(c)}</option>`).join('')}<option value="__new">+ Add new course…</option></select>
+        <input class="lt" data-i="${i}" type="time" value="${esc(l.time)}" aria-label="Race time">
+      </div>`;
+function viewLayForm(){
+  const d=draft,existing=!!d.id;
+  const res=[['pending','Pending'],['won','Horse won'],['lost','Horse lost'],['void','NR']];
+  return `<h1>${existing?'Edit lay bet':'New bet'} <span class="tag">1pt = ${money(d.ppv)}</span></h1>
+  ${kindToggle(d)}
+  <div class="card">
+    <label>Date</label><input type="date" id="f-date" value="${d.date}">
+    <label style="margin-top:14px">Exchange account</label>
+    <select id="f-bk"><option value="">— none —</option>${S.bookies.map(b=>`<option value="${b.id}" ${b.id===d.bookieId?'selected':''}>${esc(b.name)}</option>`).join('')}</select>
+  </div>
+  <div class="card"><label style="margin-top:0">Horse you're laying</label>${legFields(d.legs[0],0)}</div>
+  <div class="card">
+    <div class="row">
+      <div><label style="margin-top:0">Lay odds</label><input id="f-lo" class="xlay" inputmode="decimal" placeholder="e.g. 4.5" value="${esc(d.layOdds)}"></div>
+      <div><label style="margin-top:0">Lay stake £</label><input id="f-ls" inputmode="decimal" placeholder="e.g. 10" value="${esc(d.layStake)}"></div>
+    </div>
+    <label>Commission %</label><input id="f-cm" inputmode="decimal" value="${esc(d.comm)}">
+    <label>Result</label>
+    <div class="seg lres" id="f-lres">${res.map(([v,t])=>`<button data-v="${v}" class="${d.legs[0].result===v?'on':''}">${t}</button>`).join('')}</div>
+    <div class="preview" id="preview"></div>
+  </div>
+  <div class="card"><label style="margin-top:0">Notes (optional)</label><textarea id="f-notes" placeholder="e.g. hedge on Coral bet">${esc(d.notes)}</textarea></div>
+  <button class="btn" id="f-save">${existing?'Save changes':'Add lay bet'}</button>
+  ${existing?`<button class="btn danger" id="f-del">Delete bet</button>`:''}`;
+}
+function updateLayPreview(){
+  const d=draft,el=document.getElementById('preview');if(!el)return;
+  const lo=num(d.layOdds),ls=num(d.layStake);
+  if(!(lo>1)||!(ls>0)){el.innerHTML='Enter the lay odds and stake to see your liability.';return}
+  let h=`<strong>Liability:</strong> ${money(layLiab(d))} <span class="small">(what you lose if the horse wins)</span>
+    <br><strong>If the horse loses:</strong> <span class="pos">+${money(layWin(d))}</span> <span class="small">after ${num(d.comm)}% commission</span>
+    <br><strong>If the horse wins:</strong> <span class="neg">−${money(layLiab(d))}</span>`;
+  if(!betPending(d)){const pl=betPL(d);h+=`<br><strong>Result:</strong> <span class="${cls(pl)}">${plp(pl,pl/d.ppv)}</span>`}
+  el.innerHTML=h;
+}
+function bindKind(){
+  document.querySelectorAll('#f-kind button').forEach(b=>b.onclick=()=>{const d=draft,v=b.dataset.v;if(d.kind===v)return;
+    d.kind=v;
+    if(v==='lay'){d.type='single';d.ew=false;d.legs.length=1;if(d.legs[0].result==='placed')d.legs[0].result='pending';
+      if(d.layOdds==null){d.layOdds='';d.layStake='';d.comm=S.settings.commission}
+      const xb=exchangeBookie();if(xb)d.bookieId=xb.id}
+    render()});
+}
+function bindLegFields(d){
+  document.querySelectorAll('.ln').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].name=inp.value.trim()});
+  document.querySelectorAll('.lc').forEach(sel=>sel.onchange=()=>{const l=d.legs[+sel.dataset.i];
+    if(sel.value==='__new'){const n=prompt('New course name','');const c=addCourse(n);if(c){l.course=c;toast(c+' added to your courses')}render();return}
+    l.course=sel.value});
+  document.querySelectorAll('.lt').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].time=inp.value});
+}
+function bindLayForm(){
+  const d=draft,$=id=>document.getElementById(id);
+  bindKind();bindLegFields(d);
+  $('f-date').oninput=e=>d.date=e.target.value||today();
+  $('f-bk').onchange=e=>d.bookieId=e.target.value;
+  $('f-notes').oninput=e=>d.notes=e.target.value;
+  $('f-lo').oninput=e=>{const o=parseOdds(e.target.value);d.layOdds=o?r2(o):e.target.value.trim();d.legs[0].odds=e.target.value.trim();d.legs[0].dec=o;updateLayPreview()};
+  $('f-ls').oninput=e=>{d.layStake=e.target.value;updateLayPreview()};
+  $('f-cm').oninput=e=>{d.comm=e.target.value;updateLayPreview()};
+  document.querySelectorAll('#f-lres button').forEach(b=>b.onclick=()=>{d.legs[0].result=b.dataset.v;document.querySelectorAll('#f-lres button').forEach(x=>x.classList.toggle('on',x===b));updateLayPreview()});
+  updateLayPreview();
+  $('f-save').onclick=()=>{
+    const lo=parseOdds(d.layOdds);if(!lo)return toast('Enter the lay odds, e.g. 4.5');
+    if(!(num(d.layStake)>0))return toast('Enter the lay stake');
+    const c=num(d.comm);if(c<0||c>=100)return toast('Commission should be between 0 and 99');
+    d.layOdds=r2(lo);d.layStake=r2(num(d.layStake));d.comm=c;d.legs[0].dec=lo;if(!d.legs[0].odds)d.legs[0].odds=String(d.layOdds);
+    d.type='single';d.ew=false;d.points=0;d.retOverride=null;d.result=status(d);d.locked=true;
+    if(d.id){const i=S.bets.findIndex(b=>b.id===d.id),orig=S.bets[i];d.ppv=orig.ppv;S.bets[i]=d;toast('Lay bet updated')}
+    else{d.id=uid();d.created=Date.now();S.bets.push(d);toast(`Lay added — liability ${money(layLiab(d))}`)}
+    save();draftKey=undefined;go('bets')};
+  const del=$('f-del');if(del)del.onclick=()=>{if(confirm('Delete this lay bet?')){S.bets=S.bets.filter(b=>b.id!==d.id);save();draftKey=undefined;toast('Bet deleted');go('bets')}};
+}
 function updatePreview(){
   const d=draft,el=document.getElementById('preview');if(!el)return;
   if(!(d.points>0)){el.innerHTML='Enter your points to see the stake.';return}
@@ -528,7 +655,9 @@ function updatePreview(){
   const ob=document.getElementById('ovbox');if(ob){ob.classList.toggle('hidden',betPending(d));const fr=document.getElementById('f-ret');if(fr)fr.placeholder='Calculated: '+money(calcReturns(d))}
 }
 function bindAdd(){
+  if(isLay(draft))return bindLayForm();
   const d=draft,$=id=>document.getElementById(id);
+  bindKind();
   $('f-date').oninput=e=>d.date=e.target.value||today();
   $('f-bk').onchange=e=>d.bookieId=e.target.value;
   $('f-notes').oninput=e=>d.notes=e.target.value;
@@ -540,11 +669,7 @@ function bindAdd(){
   if(ap)ap.onclick=()=>{setType('acca',d.legs.length+1);render()};
   document.querySelectorAll('#f-ew button').forEach(b=>b.onclick=()=>{d.ew=b.dataset.v==='ew';if(!d.ew)d.legs.forEach(l=>{if(l.result==='placed')l.result='pending'});render()});
   document.querySelectorAll('#f-pm button').forEach(b=>b.onclick=()=>{d.ptsMode=b.dataset.v;document.querySelectorAll('#f-pm button').forEach(x=>x.classList.toggle('on',x===b));updatePreview()});
-  document.querySelectorAll('.ln').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].name=inp.value.trim()});
-  document.querySelectorAll('.lc').forEach(sel=>sel.onchange=()=>{const l=d.legs[+sel.dataset.i];
-    if(sel.value==='__new'){const n=prompt('New course name','');const c=addCourse(n);if(c){l.course=c;toast(c+' added to your courses')}render();return}
-    l.course=sel.value});
-  document.querySelectorAll('.lt').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].time=inp.value});
+  bindLegFields(d);
   document.querySelectorAll('.lo').forEach(inp=>inp.oninput=()=>{const l=d.legs[+inp.dataset.i];l.odds=inp.value.trim();l.dec=parseOdds(l.odds);updatePreview()});
   document.querySelectorAll('.lpf').forEach(sel=>sel.onchange=()=>{d.legs[+sel.dataset.i].placeFrac=sel.value;updatePreview()});
   document.querySelectorAll('.lres').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
@@ -561,7 +686,7 @@ function bindAdd(){
     if(d.retOverride!=null&&(isNaN(+d.retOverride)||+d.retOverride<0))return toast('Actual returns must be a number, e.g. 24.50');
     if(hasOverride(d))d.retOverride=r2(+d.retOverride);else d.retOverride=null;
     d.result=status(d);d.locked=true;
-    if(d.id){const i=S.bets.findIndex(b=>b.id===d.id),orig=S.bets[i];d.ppv=orig.ppv;d.ewMode=orig.ewMode;S.bets[i]=d;toast('Bet updated')}
+    if(d.id){const i=S.bets.findIndex(b=>b.id===d.id),orig=S.bets[i];d.ppv=orig.ppv;d.ewMode=orig.ewMode;S.bets[i]=d;syncLays(d);toast('Bet updated')}
     else{d.id=uid();d.created=Date.now();S.bets.push(d);toast(`${typeLabel(d)} added — ${money(betStake(d))}`)}
     save();draftKey=undefined;
     if(again){editId=null;render();window.scrollTo(0,0)}else go('bets');
@@ -569,6 +694,162 @@ function bindAdd(){
   $('f-save').onclick=()=>doSave(false);
   const a=$('f-saveanother');if(a)a.onclick=()=>doSave(true);
   const del=$('f-del');if(del)del.onclick=()=>{if(confirm('Delete this bet?')){S.bets=S.bets.filter(b=>b.id!==d.id);save();draftKey=undefined;toast('Bet deleted');go('bets')}};
+}
+
+
+/* ============ EXCHANGE: BACK / LAY / LEAVE ============ */
+let EX={mode:'have',src:'manual',stake:'',odds:'',horse:'',back:'',lay:'',comm:null,custom:'',bk:'',bodds:'',pts:'1'};
+const exComm=()=>{const c=EX.comm==null||EX.comm===''?S.settings.commission:num(EX.comm);return Math.min(Math.max(c,0),99)/100};
+const exBk=()=>EX.bk||((exchangeBookie()||{}).id)||'__new';
+function exSource(){
+  if(EX.src!=='manual'){
+    const b=S.bets.find(x=>x.id===EX.src);
+    if(!b||!hedgeable(b)){EX.src='manual';return exSource()}
+    const i=b.legs.findIndex(l=>l.result==='pending'),l=b.legs[i];
+    if(!l.dec)return{err:`No odds entered for ${esc(legName(l,i,b.legs.length))} yet — open the bet and add the odds you took (or the SP if it was a starting-price bet).`};
+    const sim=r=>calcReturns({...b,retOverride:null,legs:b.legs.map((x,j)=>j===i?{...x,result:r}:x)});
+    const lays=S.bets.filter(x=>isLay(x)&&x.linkedTo===b.id&&betPending(x));
+    return{bet:b,leg:i,l,horse:legName(l,i,b.legs.length),stake:betStake(b),rw:sim('won'),rl:sim('lost'),rp:b.ew?sim('placed'):null,
+      dec:l.dec,odds:l.odds,ew:b.ew,multi:b.legs.length>1,ppv:b.ppv,lays,
+      layW:lays.reduce((a,x)=>a+layLiab(x),0),layL:lays.reduce((a,x)=>a+layWin(x),0)};
+  }
+  const st=num(EX.stake),d=parseOdds(EX.odds);
+  if(!(st>0)||!d)return{need:true};
+  return{horse:EX.horse||'Your horse',l:{name:EX.horse,course:'',time:''},stake:st,rw:st*d,rl:0,rp:null,dec:d,odds:EX.odds,ppv:S.settings.pointValue,lays:[],layW:0,layL:0};
+}
+function exOutcome(s,L,lo,c){return{L:r2(L),liab:r2(L*(lo-1)),
+  win:r2(s.rw-s.stake-s.layW-L*(lo-1)),lose:r2(s.rl-s.stake+s.layL+L*(1-c)),place:s.rp==null?null:r2(s.rp-s.stake+s.layL+L*(1-c))}}
+const outRow=(t,v)=>`<div class="orow"><span>${t}</span><span class="${cls(v)}">${smoney(v)}</span></div>`;
+function optCard(title,sub,o,s,key,best){
+  return `<div class="opt ${best?'best':''}"><div class="otitle">${title}${best?' <span class="xtag">Suggested</span>':''}</div>${sub?`<div class="small">${sub}</div>`:''}
+    ${o.L>0?`<div class="ostake">Lay <strong>${money(o.L)}</strong> at ${s.lo} <span class="small">· liability ${money(o.liab)}</span></div>`:''}
+    ${outRow(`If ${esc(s.horse)} wins`,o.win)}${o.place!=null?outRow('If it places but doesn’t win',o.place):''}${outRow(o.place!=null?'If it’s unplaced':'If it loses',o.lose)}
+    ${key&&o.L>0?`<button class="btn sec" data-loglay="${key}" style="margin-top:10px">Log this lay</button>`:''}</div>`;
+}
+function exResults(){
+  const c=exComm();
+  if(EX.mode==='think'){
+    const bd=parseOdds(EX.bodds),eb=parseOdds(EX.back),p=num(EX.pts),stake=r2(p*S.settings.pointValue);
+    if(!bd||!eb||!(p>0))return `<div class="card small">Enter the bookie price, your points and the exchange <strong>back</strong> price to compare.</div>`;
+    const eff=1+(eb-1)*(1-c),bw=r2(stake*(bd-1)),ew=r2(stake*(eb-1)*(1-c)),ex=eff>bd+1e-9;
+    return `<div class="verdict back"><div class="vword">BACK ${ex?'ON THE EXCHANGE':'WITH THE BOOKIE'}</div>
+      <div>${ex?`The exchange pays more, even after ${r2(c*100)}% commission.`:`The bookie price is as good or better once exchange commission is taken off.`}</div></div>
+      <div class="card">
+        ${outRow(`Bookie @ ${esc(EX.bodds)} — profit if it wins`,bw)}
+        ${outRow(`Exchange @ ${eb} — profit after commission`,ew)}
+        <div class="hint">Exchange ${eb} is worth about ${r2(eff)} after commission (bookie ${esc(EX.bodds)} = ${(+bd).toFixed(2)}). Stake ${money(stake)} = ${p}pt.</div>
+        <div class="hint">Bookie extras like Best Odds Guaranteed or extra places aren't on the exchange win market. For each-way tips, the bookie is usually the place to bet.</div>
+        <button class="btn" id="x-logback">Log this bet</button>
+      </div>`;
+  }
+  const s=exSource();
+  if(s.err)return `<div class="card small">${s.err}</div>`;
+  if(s.need)return `<div class="card small">Enter your stake and the odds you took to get started.</div>`;
+  const lo=parseOdds(EX.lay);
+  if(!lo)return `<div class="card small">Now enter the exchange <strong>lay</strong> price (the pink one on Betfair).</div>`;
+  s.lo=r2(lo);
+  const dp=x=>(+x).toFixed(2).replace(/0$/,''),took=`${esc(s.odds)}${/\//.test(s.odds||'')?` (${dp(s.dec)})`:''}`,now=dp(lo);
+  const leave=exOutcome(s,0,lo,c);
+  const full=exOutcome(s,Math.max(0,((s.rw-s.layW)-(s.rl+s.layL))/(lo-c)),lo,c);
+  const needFree=s.stake-s.rl-s.layL;
+  const free=needFree>0.004?exOutcome(s,needFree/(1-c),lo,c):null;
+  const cust=num(EX.custom)>0?exOutcome(s,num(EX.custom),lo,c):null;
+  const locked=Math.min(full.win,full.lose,full.place==null?Infinity:full.place);
+  const shortened=lo<s.dec-1e-9,eb=parseOdds(EX.back);
+  let v;
+  if(locked>0.004){v=`<div class="verdict lay"><div class="vword">LAY</div><div>The price has shortened from ${took} to ${now}. Lay <strong>${money(full.L)}</strong> to lock in <strong>${smoney(locked)}</strong> whatever happens.</div>
+      <div class="vsub">Or leave it: ${smoney(leave.win)} if it wins, ${smoney(leave.lose)} if it loses. Lay if you'd rather have the guaranteed amount.</div></div>`}
+  else{v=`<div class="verdict leave"><div class="vword">LEAVE</div><div>${shortened?`The price has only shortened slightly (${took} → ${now}). After ${r2(c*100)}% commission, laying would lock in ${smoney(locked)}.`
+      :`The exchange price (${now}) is the same or bigger than you took (${took}), so laying now would lock in a loss of ${money(Math.abs(locked))}.`} Let the bet run.</div>
+      ${eb&&eb>s.dec?`<div class="vsub">If you still fancy it, the exchange back price (${eb}) is bigger than you took — you could back more there.</div>`:''}</div>`}
+  return v+`
+    ${s.lays.length?`<div class="card small">Already laid: ${s.lays.map(x=>`${money(num(x.layStake))} @ ${x.layOdds}`).join(', ')}. These are included in the figures below.</div>`:''}
+    ${s.ew?`<div class="card small">This is each way. A lay on the win market only covers the win part, so the figures show what happens if it wins, places or is unplaced.</div>`:''}
+    ${s.multi?`<div class="card small">This is the last horse running in your ${esc(typeLabel(s.bet))}. If it wins the bet returns ${money(s.rw)}; if it loses it returns ${money(s.rl)}.</div>`:''}
+    ${optCard('Leave it','No exchange bet',leave,s,null,locked<=0.004)}
+    ${optCard('Lock in profit',s.ew?'Same result if it wins or is unplaced — more if it only places':'Same result whatever happens',full,s,'full',locked>0.004)}
+    ${free?optCard('Get your stake back','Lose nothing if it loses, keep a smaller win if it wins',free,s,'free',false):''}
+    <div class="opt"><div class="otitle">Your own lay stake</div>
+      <input id="x-custom" inputmode="decimal" placeholder="Lay stake £" value="${esc(EX.custom)}" style="margin-top:8px">
+      <div id="x-custres">${cust?optCard('','',cust,s,'custom',false).replace('<div class="opt ">','<div>'):''}</div></div>
+    <div class="card" style="margin-top:10px"><label style="margin-top:0">Log lays to</label>
+      <select id="x-bk">${S.bookies.map(b=>`<option value="${b.id}" ${exBk()===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}<option value="__new" ${exBk()==='__new'?'selected':''}>+ Create “Betfair Exchange” account</option></select>
+      <div class="hint">Logged lays count in your stats and the account balance, and settle automatically when you settle ${s.bet?'this bet':'the horse'}.</div></div>`;
+}
+function viewEx(){
+  const c=r2(exComm()*100),pend=S.bets.filter(hedgeable);
+  if(EX.src!=='manual'&&!pend.some(b=>b.id===EX.src))EX.src='manual';
+  const opt=b=>{const i=b.legs.findIndex(l=>l.result==='pending'),l=b.legs[i];
+    return `<option value="${b.id}" ${EX.src===b.id?'selected':''}>${esc(legName(l,i,b.legs.length))}${l.time?' '+esc(l.time):''} — ${esc(typeLabel(b))}${b.ew?' e/w':''} ${money(betStake(b))} @ ${esc(l.odds||'SP')} (${esc(bookieName(b.bookieId))})</option>`};
+  return `<h1>Exchange <span class="tag">${c}% commission</span></h1>
+  <div class="seg" id="x-mode" style="margin-bottom:10px"><button data-v="have" class="${EX.mode==='have'?'on':''}">I've backed it</button><button data-v="think" class="${EX.mode==='think'?'on':''}">Thinking of backing</button></div>
+  ${EX.mode==='have'?`
+  <div class="card"><label style="margin-top:0">Your bet</label>
+    <select id="x-src"><option value="manual">Enter it myself</option>${pend.map(opt).join('')}</select>
+    ${EX.src==='manual'?`
+      <input id="x-horse" placeholder="Horse name (optional)" value="${esc(EX.horse)}" style="margin-top:10px" autocapitalize="words">
+      <div class="row" style="margin-top:8px">
+        <div><label style="margin-top:0">Stake £</label><input id="x-stake" inputmode="decimal" placeholder="e.g. 5" value="${esc(EX.stake)}"></div>
+        <div><label style="margin-top:0">Odds you took</label><input id="x-odds" placeholder="e.g. 10/1" value="${esc(EX.odds)}"></div>
+      </div>`:`<div class="hint">Your pending bets with one horse still to run appear in this list.</div>`}
+  </div>
+  <div class="card"><label style="margin-top:0">Exchange prices now</label>
+    <div class="row">
+      <div><label style="margin-top:4px">Back (blue)</label><input id="x-back" class="xback" inputmode="decimal" placeholder="optional" value="${esc(EX.back)}"></div>
+      <div><label style="margin-top:4px">Lay (pink)</label><input id="x-lay" class="xlay" inputmode="decimal" placeholder="e.g. 3.0" value="${esc(EX.lay)}"></div>
+    </div>
+    <label>Commission %</label><input id="x-comm" inputmode="decimal" value="${EX.comm==null?S.settings.commission:esc(EX.comm)}">
+  </div>`:`
+  <div class="card">
+    <div class="row">
+      <div><label style="margin-top:0">Bookie price</label><input id="x-bodds" placeholder="e.g. 5/1" value="${esc(EX.bodds)}"></div>
+      <div><label style="margin-top:0">Points</label><input id="x-pts" inputmode="decimal" value="${esc(EX.pts)}"></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div><label style="margin-top:0">Exchange back (blue)</label><input id="x-back" class="xback" inputmode="decimal" placeholder="e.g. 6.4" value="${esc(EX.back)}"></div>
+      <div><label style="margin-top:0">Commission %</label><input id="x-comm" inputmode="decimal" value="${EX.comm==null?S.settings.commission:esc(EX.comm)}"></div>
+    </div>
+  </div>`}
+  <div id="xres">${exResults()}</div>`;
+}
+function bindExResults(){
+  const $=id=>document.getElementById(id);
+  const cu=$('x-custom');if(cu)cu.oninput=()=>{EX.custom=cu.value;const s=exSource(),lo=parseOdds(EX.lay);
+    if(!s.need&&!s.err&&lo){s.lo=r2(lo);const o=num(EX.custom)>0?exOutcome(s,num(EX.custom),lo,exComm()):null;
+      $('x-custres').innerHTML=o?optCard('','',o,s,'custom',false).replace('<div class="opt ">','<div>'):'';bindLogLay()}};
+  const bk=$('x-bk');if(bk)bk.onchange=()=>EX.bk=bk.value;
+  const lb=$('x-logback');if(lb)lb.onclick=()=>{
+    const c=exComm(),bd=parseOdds(EX.bodds),eb=parseOdds(EX.back),useEx=1+(eb-1)*(1-c)>bd+1e-9;
+    const d=newDraft();d.points=num(EX.pts)||1;
+    d.legs[0].odds=useEx?String(r2(1+(eb-1)*(1-c))):EX.bodds.trim();d.legs[0].dec=parseOdds(d.legs[0].odds);
+    if(useEx){const xb=exchangeBookie();if(xb)d.bookieId=xb.id;d.notes=`Exchange back @ ${eb} (odds shown after ${r2(c*100)}% commission)`}
+    draft=d;draftKey='new';go('add')};
+  bindLogLay();
+}
+function bindLogLay(){
+  document.querySelectorAll('[data-loglay]').forEach(btn=>btn.onclick=()=>{
+    const s=exSource(),lo=parseOdds(EX.lay),c=exComm();if(s.need||s.err||!lo)return;
+    let L;const k=btn.dataset.loglay;
+    if(k==='full')L=Math.max(0,((s.rw-s.layW)-(s.rl+s.layL))/(lo-c));
+    else if(k==='free')L=(s.stake-s.rl-s.layL)/(1-c);
+    else L=num(EX.custom);
+    L=r2(L);if(!(L>0))return toast('Nothing to lay');
+    let bkId=exBk();
+    if(bkId==='__new'){const nb={id:uid(),name:'Betfair Exchange',start:0,txns:[]};S.bookies.push(nb);bkId=nb.id;EX.bk=nb.id}
+    const l=s.l||{};
+    S.bets.push({id:uid(),kind:'lay',date:s.bet?s.bet.date:today(),bookieId:bkId,type:'single',ew:false,
+      legs:[{name:l.name||s.horse||'',course:l.course||'',time:l.time||'',odds:String(r2(lo)),dec:r2(lo),placeFrac:S.settings.placeTerms,result:'pending'}],
+      layStake:L,layOdds:r2(lo),comm:r2(c*100),points:0,ptsMode:'line',ppv:s.ppv,ewMode:S.settings.ewMode,
+      notes:s.bet?`Hedge for ${typeLabel(s.bet)}${s.bet.ew?' e/w':''} with ${bookieName(s.bet.bookieId)}`:'Hedge',
+      linkedTo:s.bet?s.bet.id:null,linkedLeg:s.bet?s.leg:null,created:Date.now(),locked:true,result:'pending'});
+    save();toast(`Lay logged — ${money(L)} @ ${r2(lo)}`);EX.custom='';go('bets')});
+}
+function bindEx(){
+  const $=id=>document.getElementById(id),upd=()=>{$('xres').innerHTML=exResults();bindExResults()};
+  document.querySelectorAll('#x-mode button').forEach(b=>b.onclick=()=>{EX.mode=b.dataset.v;render()});
+  const src=$('x-src');if(src)src.onchange=()=>{EX.src=src.value;EX.custom='';render()};
+  [['x-horse','horse'],['x-stake','stake'],['x-odds','odds'],['x-back','back'],['x-lay','lay'],['x-comm','comm'],['x-bodds','bodds'],['x-pts','pts']].forEach(([id,k])=>{const el=$(id);if(el)el.oninput=()=>{EX[k]=el.value;upd()}});
+  bindExResults();
 }
 
 /* ============ BOOKIES ============ */
@@ -639,6 +920,11 @@ function viewSettings(){
     <div class="seg" id="s-pt">${['1/4','1/5','1/3','1/6'].map(f=>`<button data-v="${f}" class="${st.placeTerms===f?'on':''}">${f}</button>`).join('')}</div>
   </div>
   <div class="card">
+    <label style="margin-top:0">Exchange commission %</label>
+    <input id="s-comm" inputmode="decimal" value="${st.commission}">
+    <div class="hint">Used by the Exchange tab and for new lay bets. Betfair's standard rate is usually around 5%. Check your own account for yours.</div>
+  </div>
+  <div class="card">
     <label style="margin-top:0">Courses (shown A–Z in the drop-down)</label>
     <div class="clist">${S.settings.courses.map(c=>`<span class="cchip">${esc(c)}<button data-delc="${esc(c)}" aria-label="Remove ${esc(c)}">✕</button></span>`).join('')||'<span class="small">No courses yet</span>'}</div>
     <div class="row" style="margin-top:10px"><input id="nc-name" placeholder="Add a course e.g. Cheltenham" autocapitalize="words"><button class="btn" id="nc-add" style="margin-top:0;flex:0 0 auto;width:auto;padding:12px 18px">Add</button></div>
@@ -662,6 +948,7 @@ function bindSettings(){
   document.querySelectorAll('#s-ew button').forEach(b=>b.onclick=()=>{st.ewMode=b.dataset.v;save();render()});
   document.querySelectorAll('#s-pm button').forEach(b=>b.onclick=()=>{st.ptsMode=b.dataset.v;save();render()});
   document.querySelectorAll('#s-pt button').forEach(b=>b.onclick=()=>{st.placeTerms=b.dataset.v;save();render()});
+  const sc=document.getElementById('s-comm');sc.onchange=()=>{const v=num(sc.value);if(v>=0&&v<100){st.commission=v;save();toast('Commission set to '+v+'%')}else toast('Enter a number between 0 and 99')};
   const nc=document.getElementById('nc-name'),addNc=()=>{const c=addCourse(nc.value);if(!c)return toast('Enter a course name');toast(c+' added');render()};
   document.getElementById('nc-add').onclick=addNc;nc.onkeydown=e=>{if(e.key==='Enter')addNc()};
   document.querySelectorAll('[data-delc]').forEach(b=>b.onclick=()=>{const c=b.dataset.delc;if(confirm(`Remove ${c} from your course list?`)){st.courses=st.courses.filter(x=>x!==c);save();render()}});
@@ -670,8 +957,8 @@ function bindSettings(){
   document.getElementById('exp').onclick=()=>{exportBackup();render()};
   document.getElementById('csv').onclick=()=>{
     const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-    const rows=[['Date','Bookie','Bet type','Horses','Races','Odds','Leg results','Each way','Place terms','Bets (lines)','Points','Points are','Point value','Stake','Result','Calculated returns','Returns','P/L £','P/L pts','Notes']];
-    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{const st=status(b);rows.push([b.date,bookieName(b.bookieId),typeLabel(b),b.legs.map(l=>l.name).join(' / '),b.legs.map(legRace).join(' / '),b.legs.map(l=>l.odds).join(' / '),b.legs.map(l=>RES_SHORT[l.result]).join(' / '),b.ew?'Yes':'No',b.ew?b.legs.map(l=>l.placeFrac).join(' / '):'',lineCount(b),b.points,lineCount(b)>1?(b.ptsMode==='total'?'Total':'Per line'):'',b.ppv,betStake(b),statusLabel(st,b),calcReturns(b),betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes])});
+    const rows=[['Date','Bookie','Bet type','Horses','Races','Odds','Leg results','Each way','Place terms','Bets (lines)','Points','Points are','Point value','Stake','Result','Calculated returns','Returns','P/L £','P/L pts','Notes','Lay stake','Commission %']];
+    S.bets.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{const st=status(b);rows.push([b.date,bookieName(b.bookieId),typeLabel(b),b.legs.map(l=>l.name).join(' / '),b.legs.map(legRace).join(' / '),b.legs.map(l=>l.odds).join(' / '),b.legs.map(l=>RES_SHORT[l.result]).join(' / '),b.ew?'Yes':'No',b.ew?b.legs.map(l=>l.placeFrac).join(' / '):'',lineCount(b),b.points,lineCount(b)>1?(b.ptsMode==='total'?'Total':'Per line'):'',b.ppv,betStake(b),statusLabel(st,b),calcReturns(b),betReturns(b),betPL(b),r2(betPL(b)/b.ppv),b.notes,isLay(b)?b.layStake:'',isLay(b)?b.comm:''])});
     dl(`bets-${today()}.csv`,rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')};
   const f=document.getElementById('impfile');
   document.getElementById('imp').onclick=()=>f.click();
