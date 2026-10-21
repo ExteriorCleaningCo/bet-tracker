@@ -102,6 +102,9 @@ input[type=date]{min-width:0;-webkit-appearance:none;appearance:none;min-height:
 .leg{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
 .leg:first-of-type{border-top:0;margin-top:0;padding-top:0}
 .legno{font-size:13px;font-weight:500}
+.clist{display:flex;flex-wrap:wrap;gap:6px}
+.cchip{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:5px 6px 5px 12px;font-size:14px}
+.cchip button{border:0;background:none;color:var(--muted);font-size:13px;padding:2px 6px}
 .legtxt{min-width:0;flex:1 1 150px;line-height:1.35}
 .hn{font-weight:500}
 input.lt{flex:0 0 40%;font-size:15px;padding:11px 8px;min-width:0;-webkit-appearance:none;appearance:none;min-height:46px}
@@ -224,11 +227,17 @@ const statusLabel=(st,b)=>st==='placed'&&b.legs.length>1?'Part return':st==='voi
    Data is kept in TWO places on the phone (localStorage + IndexedDB) and the
    browser is asked to mark storage as persistent. Every change saves instantly. */
 const KEY='betTracker.v1';
-const defaultState={settings:{pointValue:5,placeTerms:'1/5',ewMode:'split',ptsMode:'line'},bookies:[],bets:[]};
+const DEFAULT_COURSES=['Bath','Kempton','Newcastle','Newmarket','Pontefract','Southwell','Wolverhampton','Yarmouth'];
+const defaultState={settings:{pointValue:5,placeTerms:'1/5',ewMode:'split',ptsMode:'line',courses:DEFAULT_COURSES.slice()},bookies:[],bets:[]};
+const sortCourses=a=>[...new Set(a.map(c=>String(c).trim()).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'en-GB',{sensitivity:'base'}));
+function addCourse(name){const n=String(name||'').trim().replace(/\s+/g,' ');if(!n)return '';
+  const ex=S.settings.courses.find(c=>c.toLowerCase()===n.toLowerCase());if(ex)return ex;
+  const nice=n.replace(/\b\w/g,ch=>ch.toUpperCase());S.settings.courses=sortCourses([...S.settings.courses,nice]);save();return nice}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function normalise(d){
   const s=Object.assign(structuredClone(defaultState),d||{});
   s.settings=Object.assign(structuredClone(defaultState.settings),s.settings||{});
+  s.settings.courses=sortCourses(Array.isArray(s.settings.courses)&&s.settings.courses.length?s.settings.courses:DEFAULT_COURSES);
   s.bookies=Array.isArray(s.bookies)?s.bookies:[];s.bets=Array.isArray(s.bets)?s.bets:[];
   s.bets.forEach(b=>{
     // upgrade bets logged in the earlier version (one selection) to the new format
@@ -471,7 +480,7 @@ function viewAdd(){
       ${d.legs.length>1?`<div class="legno">Selection ${i+1}</div>`:''}
       <input class="ln" data-i="${i}" placeholder="Horse name" value="${esc(l.name)}" style="margin-top:6px" autocapitalize="words">
       <div class="row" style="margin-top:8px">
-        <input class="lc" data-i="${i}" placeholder="Course e.g. Cheltenham" value="${esc(l.course)}" autocapitalize="words">
+        <select class="lc" data-i="${i}" aria-label="Course"><option value="">Course…</option>${sortCourses([...S.settings.courses,...(l.course?[l.course]:[])]).map(c=>`<option ${c===l.course?'selected':''}>${esc(c)}</option>`).join('')}<option value="__new">+ Add new course…</option></select>
         <input class="lt" data-i="${i}" type="time" value="${esc(l.time)}" aria-label="Race time">
       </div>
       <div class="row" style="margin-top:8px">
@@ -532,7 +541,9 @@ function bindAdd(){
   document.querySelectorAll('#f-ew button').forEach(b=>b.onclick=()=>{d.ew=b.dataset.v==='ew';if(!d.ew)d.legs.forEach(l=>{if(l.result==='placed')l.result='pending'});render()});
   document.querySelectorAll('#f-pm button').forEach(b=>b.onclick=()=>{d.ptsMode=b.dataset.v;document.querySelectorAll('#f-pm button').forEach(x=>x.classList.toggle('on',x===b));updatePreview()});
   document.querySelectorAll('.ln').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].name=inp.value.trim()});
-  document.querySelectorAll('.lc').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].course=inp.value.trim()});
+  document.querySelectorAll('.lc').forEach(sel=>sel.onchange=()=>{const l=d.legs[+sel.dataset.i];
+    if(sel.value==='__new'){const n=prompt('New course name','');const c=addCourse(n);if(c){l.course=c;toast(c+' added to your courses')}render();return}
+    l.course=sel.value});
   document.querySelectorAll('.lt').forEach(inp=>inp.oninput=()=>{d.legs[+inp.dataset.i].time=inp.value});
   document.querySelectorAll('.lo').forEach(inp=>inp.oninput=()=>{const l=d.legs[+inp.dataset.i];l.odds=inp.value.trim();l.dec=parseOdds(l.odds);updatePreview()});
   document.querySelectorAll('.lpf').forEach(sel=>sel.onchange=()=>{d.legs[+sel.dataset.i].placeFrac=sel.value;updatePreview()});
@@ -627,6 +638,12 @@ function viewSettings(){
     <label style="margin-top:0">Default each-way place terms</label>
     <div class="seg" id="s-pt">${['1/4','1/5','1/3','1/6'].map(f=>`<button data-v="${f}" class="${st.placeTerms===f?'on':''}">${f}</button>`).join('')}</div>
   </div>
+  <div class="card">
+    <label style="margin-top:0">Courses (shown A–Z in the drop-down)</label>
+    <div class="clist">${S.settings.courses.map(c=>`<span class="cchip">${esc(c)}<button data-delc="${esc(c)}" aria-label="Remove ${esc(c)}">✕</button></span>`).join('')||'<span class="small">No courses yet</span>'}</div>
+    <div class="row" style="margin-top:10px"><input id="nc-name" placeholder="Add a course e.g. Cheltenham" autocapitalize="words"><button class="btn" id="nc-add" style="margin-top:0;flex:0 0 auto;width:auto;padding:12px 18px">Add</button></div>
+    <div class="hint">Removing a course only takes it off the list. Bets already logged keep their course.</div>
+  </div>
   <h2>Backup</h2>
   <div class="card">
     <div class="hint" style="margin-top:0">✅ Every change saves instantly on this phone (stored twice for safety).${S.savedAt?` Last saved ${new Date(S.savedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}.`:''}<br>Last backup file: ${S.lastBackup?new Date(S.lastBackup).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'never'}. Export one every couple of weeks and before changing phones.</div>
@@ -645,6 +662,9 @@ function bindSettings(){
   document.querySelectorAll('#s-ew button').forEach(b=>b.onclick=()=>{st.ewMode=b.dataset.v;save();render()});
   document.querySelectorAll('#s-pm button').forEach(b=>b.onclick=()=>{st.ptsMode=b.dataset.v;save();render()});
   document.querySelectorAll('#s-pt button').forEach(b=>b.onclick=()=>{st.placeTerms=b.dataset.v;save();render()});
+  const nc=document.getElementById('nc-name'),addNc=()=>{const c=addCourse(nc.value);if(!c)return toast('Enter a course name');toast(c+' added');render()};
+  document.getElementById('nc-add').onclick=addNc;nc.onkeydown=e=>{if(e.key==='Enter')addNc()};
+  document.querySelectorAll('[data-delc]').forEach(b=>b.onclick=()=>{const c=b.dataset.delc;if(confirm(`Remove ${c} from your course list?`)){st.courses=st.courses.filter(x=>x!==c);save();render()}});
   draftKey=undefined; // new-bet form picks up changed defaults
   const dl=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
   document.getElementById('exp').onclick=()=>{exportBackup();render()};
