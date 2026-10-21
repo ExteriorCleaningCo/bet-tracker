@@ -117,6 +117,8 @@ input.xlay{background:#fde8ec;border-color:#f7c3cd}
 .ostake{margin:8px 0 4px;font-size:15px}
 .orow{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:5px 0;border-top:1px dashed var(--line)}
 .orow span:last-child{white-space:nowrap;font-weight:500}
+.pcheck .orow span:last-child{white-space:normal;text-align:right}
+.hint.neg{color:var(--red)}
 .clist{display:flex;flex-wrap:wrap;gap:6px}
 .cchip{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:5px 6px 5px 12px;font-size:14px}
 .cchip button{border:0;background:none;color:var(--muted);font-size:13px;padding:2px 6px}
@@ -334,7 +336,10 @@ function bookieBalance(bk){
   return r2(bal);
 }
 /* When a back bet's horse is settled, any lay logged against it settles too */
-function syncLays(b){if(isLay(b))return;S.bets.forEach(x=>{if(isLay(x)&&x.linkedTo===b.id){const l=b.legs[x.linkedLeg||0];
+function syncLays(b){if(isLay(b)){const bk=S.bets.find(x=>x.id===b.linkedTo),r=b.legs[0].result;
+    if(bk&&r!=='pending'){const l=bk.legs[b.linkedLeg||0];
+      if(l&&l.result==='pending'&&(r==='won'||r==='void'||(r==='lost'&&!bk.ew))){l.result=r;if(r==='won'&&!l.dec&&b.layOdds){}bk.result=status(bk);syncLays(bk)}}
+    return}S.bets.forEach(x=>{if(isLay(x)&&x.linkedTo===b.id){const l=b.legs[x.linkedLeg||0];
   if(l&&l.result!=='pending'&&x.legs[0].result==='pending'){x.legs[0].result=l.result==='placed'?'lost':l.result;x.result=status(x)}}})}
 const exchangeBookie=()=>S.bookies.find(b=>/betfair|exchange|smarkets|matchbook|betdaq/i.test(b.name));
 const bookieName=id=>(S.bookies.find(b=>b.id===id)||{}).name||'No bookie';
@@ -726,29 +731,63 @@ function optCard(title,sub,o,s,key,best){
     ${outRow(`If ${esc(s.horse)} wins`,o.win)}${o.place!=null?outRow('If it places but doesn’t win',o.place):''}${outRow(o.place!=null?'If it’s unplaced':'If it loses',o.lose)}
     ${key&&o.L>0?`<button class="btn sec" data-loglay="${key}" style="margin-top:10px">Log this lay</button>`:''}</div>`;
 }
+const dp=x=>(+x).toFixed(2).replace(/0$/,'');
+const exBackBk=()=>EX.bbk||((S.bets.slice().reverse().find(b=>!isLay(b)&&S.bookies.some(k=>k.id===b.bookieId&&k!==exchangeBookie()))||{}).bookieId)||((S.bookies.find(b=>b!==exchangeBookie())||{}).id)||'';
+/* Reads the blue/pink prices and explains what they mean */
+function priceCheck(bd,eb,lo,c,took){
+  if(!eb&&!lo)return '';
+  const rows=[];
+  if(took)rows.push(['You took',`${took.txt} = ${dp(took.dec)}`]);
+  if(bd)rows.push(['Bookie',`${esc(EX.bodds)} = ${dp(bd)}`]);
+  if(eb)rows.push(['Blue (back)',`${dp(eb)} · ≈${dp(1+(eb-1)*(1-c))} after ${r2(c*100)}%`]);
+  if(lo)rows.push(['Pink (lay)',dp(lo)]);
+  let note='';
+  if(eb&&lo){
+    if(lo<eb)note=`<div class="hint neg">Pink should be the same or higher than blue — check you haven't swapped them.</div>`;
+    else{const mid=(eb+lo)/2,gap=(lo-eb)/eb;rows.push(['Chance of winning',`about ${Math.round(100/mid)}%`]);
+      if(gap>0.1)note=`<div class="hint">⚠️ Big gap between blue and pink: the market is thin and prices can jump. Prices usually firm up closer to the off.</div>`}
+  }
+  return `<div class="card pcheck"><div class="otitle" style="margin-bottom:4px">Price check</div>${rows.map(([a,b])=>`<div class="orow"><span>${a}</span><span>${b}</span></div>`).join('')}${note}</div>`;
+}
 function exResults(){
   const c=exComm();
   if(EX.mode==='think'){
-    const bd=parseOdds(EX.bodds),eb=parseOdds(EX.back),p=num(EX.pts),stake=r2(p*S.settings.pointValue);
-    if(!bd||!eb||!(p>0))return `<div class="card small">Enter the bookie price, your points and the exchange <strong>back</strong> price to compare.</div>`;
-    const eff=1+(eb-1)*(1-c),bw=r2(stake*(bd-1)),ew=r2(stake*(eb-1)*(1-c)),ex=eff>bd+1e-9;
-    return `<div class="verdict back"><div class="vword">BACK ${ex?'ON THE EXCHANGE':'WITH THE BOOKIE'}</div>
-      <div>${ex?`The exchange pays more, even after ${r2(c*100)}% commission.`:`The bookie price is as good or better once exchange commission is taken off.`}</div></div>
-      <div class="card">
-        ${outRow(`Bookie @ ${esc(EX.bodds)} — profit if it wins`,bw)}
-        ${outRow(`Exchange @ ${eb} — profit after commission`,ew)}
-        <div class="hint">Exchange ${eb} is worth about ${r2(eff)} after commission (bookie ${esc(EX.bodds)} = ${(+bd).toFixed(2)}). Stake ${money(stake)} = ${p}pt.</div>
-        <div class="hint">Bookie extras like Best Odds Guaranteed or extra places aren't on the exchange win market. For each-way tips, the bookie is usually the place to bet.</div>
-        <button class="btn" id="x-logback">Log this bet</button>
-      </div>`;
+    const bd=parseOdds(EX.bodds),eb=parseOdds(EX.back),lo=parseOdds(EX.lay),p=num(EX.pts),stake=r2(p*S.settings.pointValue);
+    if(!(p>0))return `<div class="card small">Enter your points.</div>`;
+    if(!eb&&!lo)return `<div class="card small">Enter the Betfair <strong>blue</strong> (back) and <strong>pink</strong> (lay) prices${bd?'':', and the bookie price if you have one'}.</div>`;
+    let out=priceCheck(bd,eb,lo,c);
+    // 1) Guaranteed profit: bookie price bigger than the pink after commission
+    if(bd&&lo&&bd*(1-c)>lo-c+1e-9){
+      const L=stake*bd/(lo-c),o={L:r2(L),liab:r2(L*(lo-1)),win:r2(stake*(bd-1)-L*(lo-1)),lose:r2(-stake+L*(1-c)),place:null};
+      const g=Math.min(o.win,o.lose);
+      return `<div class="verdict lay"><div class="vword">BACK &amp; LAY</div><div>Coral's price (${esc(EX.bodds)} = ${dp(bd)}) is bigger than Betfair's pink (${dp(lo)}). Back <strong>${money(stake)}</strong> with the bookie and lay <strong>${money(o.L)}</strong> on Betfair to make <strong>${smoney(g)}</strong> whatever happens.</div>
+        <div class="vsub">Or just back it with the bookie: ${smoney(r2(stake*(bd-1)))} if it wins, ${smoney(-stake)} if it loses.</div></div>
+        ${out}
+        ${optCard('Back with bookie + lay on Betfair','Guaranteed result',o,{horse:'it',lo:dp(lo)},null,true)}
+        <div class="card"><label style="margin-top:0">Log to</label>
+          <div class="row"><select id="x-bbk">${S.bookies.filter(b=>b!==exchangeBookie()).map(b=>`<option value="${b.id}" ${exBackBk()===b.id?'selected':''}>${esc(b.name)}</option>`).join('')||'<option value="">— no bookie —</option>'}</select>
+          <select id="x-bk">${S.bookies.map(b=>`<option value="${b.id}" ${exBk()===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}<option value="__new" ${exBk()==='__new'?'selected':''}>+ Betfair Exchange</option></select></div>
+          <div class="hint">Left: the bookie for the back bet. Right: your exchange account for the lay. Prices move fast, so place the lay straight after the back bet.</div>
+          <button class="btn" id="x-logboth">Log both bets</button></div>`;
+    }
+    // 2) Back: bookie vs exchange blue
+    const eff=eb?1+(eb-1)*(1-c):0,useEx=eb&&(!bd||eff>bd+1e-9);
+    const rows=`${bd?outRow(`Bookie @ ${esc(EX.bodds)} — profit if it wins`,r2(stake*(bd-1))):''}${eb?outRow(`Betfair blue @ ${dp(eb)} — profit after ${r2(c*100)}%`,r2(stake*(eb-1)*(1-c))):''}`;
+    if(!bd&&!eb)return `<div class="card small">Enter the Betfair <strong>blue</strong> price, or the bookie price, to see where to back it.</div>`+out;
+    return `<div class="verdict back"><div class="vword">BACK ${useEx?'ON THE EXCHANGE':'WITH THE BOOKIE'}</div>
+      <div>${!bd?`Betfair's blue price ${dp(eb)} is worth about ${dp(eff)} after commission. Add the bookie price to compare.`:!eb?`Add the Betfair blue price to compare with the bookie.`:useEx?`Betfair pays more, even after ${r2(c*100)}% commission.`:`The bookie price is as good or better once Betfair's commission is taken off.`}</div>
+      ${bd&&lo?`<div class="vsub">No guaranteed profit here: Coral's ${dp(bd)} isn't bigger than Betfair's pink ${dp(lo)} once commission is taken off.</div>`:''}</div>
+      ${out}
+      ${rows?`<div class="card">${rows}<div class="hint">Stake ${money(stake)} = ${p}pt. Bookie extras like Best Odds Guaranteed or extra places aren't on the exchange win market. For each-way tips, the bookie is usually the place to bet.</div>
+      <button class="btn" id="x-logback">Log this bet</button></div>`:''}`;
   }
   const s=exSource();
   if(s.err)return `<div class="card small">${s.err}</div>`;
   if(s.need)return `<div class="card small">Enter your stake and the odds you took to get started.</div>`;
-  const lo=parseOdds(EX.lay);
-  if(!lo)return `<div class="card small">Now enter the exchange <strong>lay</strong> price (the pink one on Betfair).</div>`;
+  const lo=parseOdds(EX.lay),eb0=parseOdds(EX.back);
+  if(!lo)return `<div class="card small">Now enter the Betfair <strong>pink</strong> (lay) price${eb0?'':' — and the blue one if you like'}. The pink price is what decides whether laying is worth it.</div>`+priceCheck(null,eb0,null,c,{txt:esc(s.odds),dec:s.dec});
   s.lo=r2(lo);
-  const dp=x=>(+x).toFixed(2).replace(/0$/,''),took=`${esc(s.odds)}${/\//.test(s.odds||'')?` (${dp(s.dec)})`:''}`,now=dp(lo);
+  const took=`${esc(s.odds)}${/\//.test(s.odds||'')?` (${dp(s.dec)})`:''}`,now=dp(lo);
   const leave=exOutcome(s,0,lo,c);
   const full=exOutcome(s,Math.max(0,((s.rw-s.layW)-(s.rl+s.layL))/(lo-c)),lo,c);
   const needFree=s.stake-s.rl-s.layL;
@@ -762,7 +801,7 @@ function exResults(){
   else{v=`<div class="verdict leave"><div class="vword">LEAVE</div><div>${shortened?`The price has only shortened slightly (${took} → ${now}). After ${r2(c*100)}% commission, laying would lock in ${smoney(locked)}.`
       :`The exchange price (${now}) is the same or bigger than you took (${took}), so laying now would lock in a loss of ${money(Math.abs(locked))}.`} Let the bet run.</div>
       ${eb&&eb>s.dec?`<div class="vsub">If you still fancy it, the exchange back price (${eb}) is bigger than you took — you could back more there.</div>`:''}</div>`}
-  return v+`
+  return v+priceCheck(null,eb,lo,c,{txt:esc(s.odds),dec:s.dec})+`
     ${s.lays.length?`<div class="card small">Already laid: ${s.lays.map(x=>`${money(num(x.layStake))} @ ${x.layOdds}`).join(', ')}. These are included in the figures below.</div>`:''}
     ${s.ew?`<div class="card small">This is each way. A lay on the win market only covers the win part, so the figures show what happens if it wins, places or is unplaced.</div>`:''}
     ${s.multi?`<div class="card small">This is the last horse running in your ${esc(typeLabel(s.bet))}. If it wins the bet returns ${money(s.rw)}; if it loses it returns ${money(s.rl)}.</div>`:''}
@@ -802,13 +841,14 @@ function viewEx(){
   </div>`:`
   <div class="card">
     <div class="row">
-      <div><label style="margin-top:0">Bookie price</label><input id="x-bodds" placeholder="e.g. 5/1" value="${esc(EX.bodds)}"></div>
+      <div><label style="margin-top:0">Bookie price</label><input id="x-bodds" placeholder="optional e.g. 5/1" value="${esc(EX.bodds)}"></div>
       <div><label style="margin-top:0">Points</label><input id="x-pts" inputmode="decimal" value="${esc(EX.pts)}"></div>
     </div>
     <div class="row" style="margin-top:8px">
-      <div><label style="margin-top:0">Exchange back (blue)</label><input id="x-back" class="xback" inputmode="decimal" placeholder="e.g. 6.4" value="${esc(EX.back)}"></div>
-      <div><label style="margin-top:0">Commission %</label><input id="x-comm" inputmode="decimal" value="${EX.comm==null?S.settings.commission:esc(EX.comm)}"></div>
+      <div><label style="margin-top:0">Betfair blue (back)</label><input id="x-back" class="xback" inputmode="decimal" placeholder="e.g. 6.4" value="${esc(EX.back)}"></div>
+      <div><label style="margin-top:0">Betfair pink (lay)</label><input id="x-lay" class="xlay" inputmode="decimal" placeholder="e.g. 6.8" value="${esc(EX.lay)}"></div>
     </div>
+    <label>Commission %</label><input id="x-comm" inputmode="decimal" value="${EX.comm==null?S.settings.commission:esc(EX.comm)}">
   </div>`}
   <div id="xres">${exResults()}</div>`;
 }
@@ -818,8 +858,20 @@ function bindExResults(){
     if(!s.need&&!s.err&&lo){s.lo=r2(lo);const o=num(EX.custom)>0?exOutcome(s,num(EX.custom),lo,exComm()):null;
       $('x-custres').innerHTML=o?optCard('','',o,s,'custom',false).replace('<div class="opt ">','<div>'):'';bindLogLay()}};
   const bk=$('x-bk');if(bk)bk.onchange=()=>EX.bk=bk.value;
+  const bbk=$('x-bbk');if(bbk)bbk.onchange=()=>EX.bbk=bbk.value;
+  const both=$('x-logboth');if(both)both.onclick=()=>{
+    const c=exComm(),bd=parseOdds(EX.bodds),lo=parseOdds(EX.lay),p=num(EX.pts),stake=p*S.settings.pointValue;if(!bd||!lo||!(p>0))return;
+    const L=r2(stake*bd/(lo-c));let xk=exBk();
+    if(xk==='__new'){const nb={id:uid(),name:'Betfair Exchange',start:0,txns:[]};S.bookies.push(nb);xk=nb.id;EX.bk=nb.id}
+    const back=newDraft();back.id=uid();back.created=Date.now();back.bookieId=exBackBk();back.points=p;back.ptsMode='line';
+    back.legs[0].odds=EX.bodds.trim();back.legs[0].dec=bd;back.notes='Backed & laid (guaranteed)';back.locked=true;back.result='pending';
+    S.bets.push(back);
+    S.bets.push({id:uid(),kind:'lay',date:today(),bookieId:xk,type:'single',ew:false,legs:[{name:'',course:'',time:'',odds:String(r2(lo)),dec:r2(lo),placeFrac:S.settings.placeTerms,result:'pending'}],
+      layStake:L,layOdds:r2(lo),comm:r2(c*100),points:0,ptsMode:'line',ppv:S.settings.pointValue,ewMode:S.settings.ewMode,
+      notes:`Lay against ${bookieName(back.bookieId)} bet`,linkedTo:back.id,linkedLeg:0,created:Date.now()+1,locked:true,result:'pending'});
+    save();toast('Both bets logged — tap the back bet to add the horse name');go('bets')};
   const lb=$('x-logback');if(lb)lb.onclick=()=>{
-    const c=exComm(),bd=parseOdds(EX.bodds),eb=parseOdds(EX.back),useEx=1+(eb-1)*(1-c)>bd+1e-9;
+    const c=exComm(),bd=parseOdds(EX.bodds),eb=parseOdds(EX.back),useEx=!!eb&&(!bd||1+(eb-1)*(1-c)>bd+1e-9);
     const d=newDraft();d.points=num(EX.pts)||1;
     d.legs[0].odds=useEx?String(r2(1+(eb-1)*(1-c))):EX.bodds.trim();d.legs[0].dec=parseOdds(d.legs[0].odds);
     if(useEx){const xb=exchangeBookie();if(xb)d.bookieId=xb.id;d.notes=`Exchange back @ ${eb} (odds shown after ${r2(c*100)}% commission)`}
@@ -846,7 +898,7 @@ function bindLogLay(){
 }
 function bindEx(){
   const $=id=>document.getElementById(id),upd=()=>{$('xres').innerHTML=exResults();bindExResults()};
-  document.querySelectorAll('#x-mode button').forEach(b=>b.onclick=()=>{EX.mode=b.dataset.v;render()});
+  document.querySelectorAll('#x-mode button').forEach(b=>b.onclick=()=>{if(EX.mode!==b.dataset.v){EX.mode=b.dataset.v;EX.back='';EX.lay='';EX.custom=''}render()});
   const src=$('x-src');if(src)src.onchange=()=>{EX.src=src.value;EX.custom='';render()};
   [['x-horse','horse'],['x-stake','stake'],['x-odds','odds'],['x-back','back'],['x-lay','lay'],['x-comm','comm'],['x-bodds','bodds'],['x-pts','pts']].forEach(([id,k])=>{const el=$(id);if(el)el.oninput=()=>{EX[k]=el.value;upd()}});
   bindExResults();
